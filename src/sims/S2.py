@@ -56,10 +56,57 @@ for sigma2 in sigma2_grid:
             "RMSE": np.sqrt(loss_N)
         })
 df = pd.DataFrame(records)
-# --------------------------------------------------------------------------------
-fig = plt.figure(figsize=(8, 4))
-sns.boxplot(data=df, y="sigma2", x="RMSE", hue="Method", orient="h")
-plt.title("MC Risk vs Noise Level")
+# Errorbar plot (mean ± standard error over MC runs)
+summary = (
+    df.groupby(["sigma2", "Method"], as_index=False)["RMSE"]
+      .agg(mean="mean", std="std", n="count")
+)
+# Calculate percentiles (matching boxplot representation)
+summary = (
+    df.groupby(["sigma2", "Method"], as_index=False)["RMSE"]
+      .agg(
+          median="median",
+          q25=lambda x: x.quantile(0.25),
+          q75=lambda x: x.quantile(0.75),
+          mean="mean"
+      )
+)
+
+# Create asymmetric error bars
+summary["err_lower"] = summary["median"] - summary["q25"]
+summary["err_upper"] = summary["q75"] - summary["median"]
+
+fig, ax = plt.subplots(figsize=(8, 4))
+for method, g in summary.groupby("Method"):
+    g = g.sort_values("sigma2")
+    ax.errorbar(
+        g["sigma2"],
+        g["median"],  # Use median (like boxplot center line)
+        yerr=[g["err_lower"], g["err_upper"]],  # Asymmetric errors to q25 and q75
+        fmt="o-",
+        capsize=3,
+        linewidth=1.5,
+        markersize=4,
+        label=method,
+    )
+
+# Text box
+textstr = '\n'.join((
+    f'NMC = {NMC}',
+    f'n = {n_samples}',
+    f'$\kappa$ = {kappa}',
+    f'$\sigma^2$ range = {sigma2_grid}',
+    f'M = {M}',
+    f'$\\rho$ = {rho:.0e}'))
+props = dict(boxstyle='round', facecolor='wheat', alpha=0.5)
+ax.text(1.05, 0.5, textstr, transform=ax.transAxes, fontsize=10,
+         verticalalignment='center', bbox=props)
+
+ax.set_title("MC Risk vs Noise Level")
+ax.set_xlabel("$\sigma^2$")
+ax.set_ylabel("RMSE (median ± IQR)")
+ax.legend(title="Method")
+ax.grid(True, alpha=0.3)
 plt.tight_layout()
 plt.show()
-fig.savefig('out/S2.png', dpi=300)
+fig.savefig("out/S2.png", dpi=300, bbox_inches='tight')
