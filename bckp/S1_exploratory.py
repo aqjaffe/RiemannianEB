@@ -150,4 +150,49 @@ for ax in ax_bottom:
 plt.tight_layout()
 plt.show()
 
-fig.savefig('out/S1_exploratory.png', dpi=300)
+fig.savefig('figures/S1_exploratory.png', dpi=300)
+
+
+
+
+
+
+# f_scale = 0.3
+# res = 100
+# bottom = .5
+# incr = 20
+# angs = np.radians(np.arange(0, 360, incr))
+# angs_fill = np.append(angs, 2*np.pi)  # add 360 deg in radians
+# bottom_fill = np.append(bottom*np.ones_like(angs), bottom)
+# grid_I = np.linspace(0, 2*np.pi, 100)
+# grid = np.asarray([np.cos(grid_I),np.sin(grid_I)]).T
+
+# fig = plt.figure(figsize=(15, 4))
+# #  G -----------------------------------------------------------------------------------------------------------
+# ax1 = fig.add_subplot(1, 3, 1, polar=True)
+# grid, hat_f, hat_grad_f = density_estimate('S1', Theta, M,  grid)
+# hat_f_pos = np.maximum(hat_f, 0); norm_hat_f = hat_f_pos / np.max(hat_f_pos)
+# ax1.bar(grid_I, f_scale*hat_f_pos, width=2*np.pi/res, bottom=bottom, color=plt.colormaps['Reds'](norm_hat_f), alpha=0.8, align='edge')
+# ax1.set_title('PRIOR $g(\cdot )$')
+# ax1.plot(angs_fill, bottom_fill*np.ones_like(angs_fill), color='black', linewidth=1., zorder=5)
+# ax1.fill_between(angs_fill, np.zeros_like(angs_fill), bottom_fill, color='white', zorder=4)
+# ax1.set_yticklabels([])
+# # f -----------------------------------------------------------------------------------------------------------
+# ax1 = fig.add_subplot(1, 3, 2, polar=True)
+# grid, hat_f, hat_grad_f = density_estimate('S1', X, M,  grid)
+# hat_f_pos = np.maximum(hat_f, 0); norm_hat_f = hat_f_pos / np.max(hat_f_pos)
+# ax1.bar(grid_I, f_scale*hat_f_pos, width=2*np.pi/res, bottom=bottom, color=plt.colormaps['Blues'](norm_hat_f), alpha=0.8, align='edge')
+# ax1.set_title('POSTERIOR $F(\cdot )$')
+# ax1.plot(angs_fill, bottom_fill*np.ones_like(angs_fill), color='black', linewidth=1., zorder=5)
+# ax1.fill_between(angs_fill, np.zeros_like(angs_fill), bottom_fill, color='white', zorder=4)
+# ax1.set_yticklabels([])
+# # delta -----------------------------------------------------------------------------------------------------------
+# ax1 = fig.add_subplot(1, 3, 3, polar=True)
+# grid_delta, hat_f_delta, hat_grad_f_delta = density_estimate('S1', delta, M, grid)
+# hat_f_delta_pos = np.maximum(hat_f_delta, 0); norm_hat_f_delta = hat_f_delta_pos / np.max(hat_f_delta_pos)
+# ax1.bar(grid_I, f_scale*hat_f_delta_pos, width=2*np.pi/res, bottom=bottom, color=plt.colormaps['Greens'](norm_hat_f_delta), alpha=0.8, align='edge')
+# ax1.set_title('DENOISED $\delta(\cdot )$')
+# ax1.plot(angs_fill, bottom_fill*np.ones_like(angs_fill), color='black', linewidth=1., zorder=5)
+# ax1.fill_between(angs_fill, np.zeros_like(angs_fill), bottom_fill, color='white', zorder=4)
+# ax1.set_yticklabels([])
+# plt.show()

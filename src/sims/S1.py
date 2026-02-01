@@ -1,3 +1,8 @@
+
+
+
+
+
 # --------------------------------------------------------------------------------
 n = 1000
 M = 5
@@ -23,23 +28,9 @@ plt.rcParams.update({'font.size': 10,
                      'font.family': 'serif',
                      'font.serif':'Palatino'})
  
-def sample_G(n_samples, G_params):
-    tau2, num_modes = G_params['tau2'], G_params['num_modes']
+def MCrun(G_params, n, sigma2, M , rho):
     circle = Hypersphere(1)
-    angles = np.linspace(0, 2*np.pi, num_modes, endpoint=False)
-    means = np.stack([np.cos(angles), np.sin(angles)], axis=1)
-    classes = np.random.randint(0, num_modes, n_samples)
-    samples = np.zeros((n_samples, 2))
-    for k in range(num_modes):
-        idx = (classes == k)
-        nk = idx.sum()
-        if nk > 0:
-            samples[idx] = circle.random_riemannian_normal(means[k], 1. / tau2, nk)
-    return samples
-
-def MCrun(sample_G, G_params, n, sigma2, M , rho):
-    circle = Hypersphere(1)
-    Theta = sample_G(n,G_params)
+    Theta = S1_multimodal_prior(n,G_params)
     X = circle.random_riemannian_normal(Theta, 1./sigma2, n)
     delta = denoiser('S1', X, M, rho, sigma2, X)
     loss_T = (circle.metric.dist_broadcast(delta, Theta).ravel()**2).mean()      
@@ -47,14 +38,13 @@ def MCrun(sample_G, G_params, n, sigma2, M , rho):
     return loss_T, loss_N
 
 # --------------------------------------------------------------------------------
-
 dfs = []
 for num_modes in modes:
     G_params = {'tau2': tau2, 'num_modes': num_modes}
     records = []
     for sigma2 in sigma2_grid:
         for _ in tqdm(range(NMC), desc=f"sigma2={sigma2}"):
-            loss_T, loss_N = MCrun(sample_G, G_params, n, sigma2, M, rho)
+            loss_T, loss_N = MCrun(G_params, n, sigma2, M, rho)
             records.append({
                 "num_modes": num_modes,
                 "sigma2": sigma2,
@@ -69,10 +59,14 @@ for num_modes in modes:
             })
     dfs.append(pd.DataFrame(records))
 dfs = pd.concat(dfs, axis=0)
+
+
+
+
+
 # --------------------------------------------------------------------------------
 fig, axs = plt.subplots(nrows=4, ncols=len(modes), figsize=(4*len(modes), 12), sharey=False)
 fig.suptitle("MC Risk: Naive vs Denoised")
-
 for idx, (num_modes, df) in enumerate(dfs.groupby("num_modes")):
     ax = axs[0,idx]
     ax.set_title(f"Number of Modes = {num_modes}")
@@ -131,7 +125,7 @@ for idx, (num_modes, df) in enumerate(dfs.groupby("num_modes")):
 
 
     ax = axs[1,idx]
-    Theta = sample_G(1000, {'tau2': tau2, 'num_modes': num_modes})
+    Theta = S1_multimodal_prior(1000, {'tau2': tau2, 'num_modes': num_modes})
     sns.kdeplot(x=Hypersphere(1).extrinsic_to_intrinsic_coords(Theta).ravel(), fill=True, ax=ax, color= 'red')
     ax.set_title("$g_{}$".format(num_modes))
 
@@ -150,4 +144,4 @@ for idx, (num_modes, df) in enumerate(dfs.groupby("num_modes")):
         ax.set_xlim(-2*np.pi, 2*np.pi)
 plt.tight_layout()
 plt.show()
-fig.savefig("out/S1.png", dpi=300, bbox_inches="tight")
+fig.savefig("figures/S1.png", dpi=300, bbox_inches="tight")

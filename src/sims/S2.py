@@ -197,7 +197,7 @@ for idx, (num_modes, df) in enumerate(dfs.groupby("num_modes")):
 
 plt.tight_layout()
 plt.show()
-fig.savefig("out/S2.png", dpi=300, bbox_inches="tight")
+fig.savefig("figures/S2.png", dpi=300, bbox_inches="tight")
 
 
 
