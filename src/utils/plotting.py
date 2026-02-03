@@ -6,40 +6,84 @@ from .density_estimation import density_estimate
 circle = Hypersphere(dim=1)
 sphere = Hypersphere(dim=2)
 
+
 # ------------------------------------------------------------------ CIRCLE ------------------------------------------------------------------------------------------------------
-def S1_histogram(X, nbins, ax, cmap):
+def S1_scatter(X, ax, color, alpha=.5, s=5, title=None,jitter_std = 0):
+    '''
+    Scatter plot on a polar projection.
+    Parameters
+    ----------
+    X : array-like, shape (n_samples, 2)
+        Extrinsic coordinates of points on the circle.
+    ax : matplotlib.axes.Axes
+        Axes object to plot on.
+    color : color  
+        Color of the points.
+    alpha : float, optional
+        Transparency of the points. Default is 0.5.
+    s : float, optional 
+        Size of the points. Default is 5.
+    title : str, optional
+        axes title object. Default is None
+    jitter_std : float, optional
+        Std of radial jitter. If 0, no jitter is applied.
+    '''
+    theta = np.arctan2(X[:, 1], X[:, 0])
+
+    # Radial jitter: zero-mean (unbiased), reproducible via global RNG state,
+    # and clipped to avoid extreme outliers.
+    if jitter_std and jitter_std > 0:
+        jitter = np.random.uniform(-jitter_std,jitter_std, len(X))
+        r = 1.0 + jitter
+        r = np.maximum(r, 0.0)  # keep radius non-negative
+    else:
+        r = np.ones(len(X))
+
+    ax.scatter(theta, r, s=s, alpha=alpha, color=color)
+    ax.set_yticks([])
+    if title is not None:
+        ax.set_title(title)
+    ax.set_ylim(bottom=0)
+    return None
+
+def S1_histogram(X, nbins, ax, cmap, title= None, scale = 1,disk_r = None):
     angles = np.mod(circle.extrinsic_to_angle(X), 2*np.pi)
     vals, bin_edges = np.histogram(angles, bins=nbins, range=(0, 2*np.pi))
-    if vals.max() > 0:
-        vals = vals / vals.max()
+    if vals.max() > 0: vals = vals / vals.max()*scale
 
     centers = 0.5 * (bin_edges[:-1] + bin_edges[1:])
     width = 1.2*(2*np.pi) / nbins
-    bottom = 0.8
+    bottom = 0.8*scale
 
-    bars = ax.bar(centers, vals, width=width, bottom=bottom,
-                  edgecolor="white", linewidth=0.5)
+    # draw histogram
+    bars = ax.bar(centers, vals, width=width, bottom=bottom, edgecolor="white", linewidth=0.5)
 
+    # Color by *normalized* bin height so the colormap is independent of `scale`.
     cm = plt.cm.get_cmap(cmap) if isinstance(cmap, str) else cmap
-    for r, bar in zip(vals, bars):
-        bar.set_facecolor(cm(r))
+    denom = vals.max() if vals.size and vals.max() > 0 else 1.0
+    vals_norm = vals / denom
+    for r_norm, bar in zip(vals_norm, bars):
+        bar.set_facecolor(cm(r_norm))
         bar.set_alpha(0.8)
 
-    ax.bar(0, bottom, width=2*np.pi, bottom=0,
-        color="white", edgecolor="none",
-        align="edge", zorder=3)
+    # central white disk
+    disk_r = bottom if disk_r is None else disk_r 
+    ax.bar(0, disk_r, width=2*np.pi, bottom=0, color="white", edgecolor="none", align="edge", zorder=3)
+    # and its boundary
     theta = np.linspace(0, 2*np.pi, 300)
-    ax.plot(theta, np.full_like(theta, bottom),
-            color="black", linewidth=1.2, zorder=4)
+    ax.plot(theta, np.full_like(theta, disk_r), color="black", linewidth=1.2, zorder=4)
     
     ax.set_ylim(0, 1 + bottom)
     ax.set_yticks([])
     ax.spines["polar"].set_visible(False)
+
+    if title is not None:
+        ax.set_title(title, fontsize = 15)
     return None
 
 
 
-def S1_smooth_histogram(X, M,ax, cmap):
+def S1_smooth_histogram(X, M, ax, cmap, title = None):
     f_scale = 0.3
     res = 100
     bottom = .5
@@ -63,11 +107,14 @@ def S1_smooth_histogram(X, M,ax, cmap):
     theta = np.linspace(0, 2*np.pi, 300)
     ax.plot(theta, np.full_like(theta, bottom),
             color="black", linewidth=1.2, zorder=4)
+    if title is not None:
+        ax.set_title(title, fontsize = 15)
     return None
+    
     
 
 
-def S1_score_quiver(X, M, rho, ax, res = 50):
+def S1_score_quiver(X, M, rho, ax, res = 50, title = None):
     f_scale = 0.5
     bottom = 0.8              # match histogram
     grad_scale = 0.15
@@ -102,13 +149,13 @@ def S1_score_quiver(X, M, rho, ax, res = 50):
            align="edge", zorder=3)
 
     theta_ring = np.linspace(0, 2*np.pi, 300)
-    ax.plot(theta_ring, np.full_like(theta_ring, bottom),
-            color="black", linewidth=1.2, zorder=4)
+    ax.plot(theta_ring, np.full_like(theta_ring, bottom),color="black", linewidth=1.2, zorder=4)
 
     ax.set_ylim(0, 1 + bottom)
     ax.set_yticks([])
     ax.spines["polar"].set_visible(False)
-
+    if title is not None:
+        ax.set_title(title, fontsize = 15)
     return None
 
 # ------------------------------------------------------------------ SHPERE ------------------------------------------------------------------------------------------------------
@@ -127,7 +174,7 @@ def S2grid(grid_resolution=50):
     ], axis=-1).reshape(-1,3)
     return X_grid, grid_theta, grid_phi
 
-def S2plot_quiver(fig, density_args, rho, mode, ax, skip = 1, grid_resolution = 50, scale = 5, ):
+def S2plot_quiver(fig, density_args, rho, mode, ax, skip = 1, grid_resolution = 50, scale = 5):
     if mode not in ['gradient', 'score']:
         raise ValueError("mode must be 'gradient' or 'score'")
         
@@ -176,7 +223,7 @@ def S2plot_quiver(fig, density_args, rho, mode, ax, skip = 1, grid_resolution = 
     fig.colorbar(im,ax= ax,  orientation='horizontal', fraction=0.05, pad=0.04)
     return None
 
-def S2scatter(X, ax, color, alpha=.5, s=5, lw=.5, mollwide=True):
+def S2scatter(X, ax, color, alpha=.5, s=5, lw=.5, title = None):
     '''
     Scatter plot on a Mollweide projection.
     Parameters
@@ -201,6 +248,8 @@ def S2scatter(X, ax, color, alpha=.5, s=5, lw=.5, mollwide=True):
     theta_mw = np.pi/2 - theta     # convert colatitude to latitude [-π/2, π/2]
     ax.scatter(phi_mw, theta_mw, s=s, alpha=alpha, color=color)
     ax.grid(True, color='gray', lw=lw)
+    if title is not None:
+        ax.set_title(title, fontsize = 15)
     return None
 
 

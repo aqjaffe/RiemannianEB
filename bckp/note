@@ -1,0 +1,9 @@
+# fig, axs = plt.subplots(2,2, figsize = (10,12), subplot_kw={'polar':True})
+
+# nbins = 50
+# S1_smooth_histogram(Theta, nbins, axs[0,0], 'Reds', title = '$\Theta$')
+# S1_histogram(X, nbins, axs[1,0], 'Blues', title = '$\delta$')
+# S1_histogram(delta, nbins, axs[1,1], 'Greens', title = '$\delta$')
+# S1_score_quiver(X, M, rho, axs[0,1], res = 50); axs[0,1].set_title(r'$\sigma^2 \nabla \log \hat{f}$', pad=20)
+
+# plt.show()

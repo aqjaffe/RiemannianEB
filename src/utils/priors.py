@@ -28,8 +28,7 @@ def S1_multimodal_prior(n_samples, G_params):
     classes = np.random.randint(0, num_modes, n_samples)
     samples = np.zeros((n_samples, 2))
     for k in range(num_modes):
-        idx = (classes == k)
-        nk = idx.sum()
+        idx = (classes == k); nk = idx.sum()
         if nk > 0:
             samples[idx] = circle.random_riemannian_normal(means[k], 1. / tau2, nk)
     return samples
