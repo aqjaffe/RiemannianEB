@@ -207,7 +207,7 @@ def S2plot_quiver(fig, density_args, rho, mode, ax, skip = 1, grid_resolution = 
         im = ax.quiver(grid_phi_mw[::skip, ::skip], grid_theta_mw[::skip, ::skip],
                     grad_phi[::skip, ::skip], grad_theta[::skip, ::skip],
                     np.sqrt(grad_theta**2 + grad_phi**2)[::skip, ::skip],
-                    scale= scale, cmap='Reds', alpha=0.7)
+                    scale= scale, cmap='Blues', alpha=0.7)
         ax.set_title(r'$\nabla \hat f$')
 
     if mode == 'score':
