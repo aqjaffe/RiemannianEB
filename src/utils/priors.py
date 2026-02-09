@@ -70,3 +70,23 @@ def S2_multimodal_prior(n_samples,G_params):
         extra_samples = sphere.random_von_mises_fisher(kappa=kappa, mu=mus[0], n_samples=n_samples - len(Theta))
         Theta = np.vstack([Theta, extra_samples])
     return Theta
+
+
+
+def SO3_multimodal_prior(n_samples,G_params):
+    '''
+    Sample from a multimodal prior on SO(2).
+    Parameters
+    n_samples : int
+        Number of samples to draw.
+    G_params : dict
+        Dictionary containing the parameters of the prior:
+        - 'num_modes': number of modes in the mixture.
+        - 'kappa': concentration parameter for the von Mises-Fisher distributions.
+    Returns
+    -------
+    Theta : array-like, shape (n_samples, 3)
+        Samples drawn from the multimodal prior on SO(3).
+    '''
+    # complete here
+    return None

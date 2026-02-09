@@ -1,1 +1,1 @@
-# RiemannianEB
+# RiemEB

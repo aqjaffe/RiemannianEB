@@ -1,8 +1,8 @@
-PWD /Users/leonardosantoro/Documents/GitHub/RiemannianEB/other
+PWD /Users/leonardosantoro/Documents/GitHub/RiemEB/other
 INPUT /usr/local/texlive/2025/texmf.cnf
 INPUT /usr/local/texlive/2025/texmf-dist/web2c/texmf.cnf
 INPUT /usr/local/texlive/2025/texmf-var/web2c/pdftex/pdflatex.fmt
-INPUT /Users/leonardosantoro/Documents/GitHub/RiemannianEB/other/tikz_generator.tex
+INPUT /Users/leonardosantoro/Documents/GitHub/RiemEB/other/tikz_generator.tex
 OUTPUT tikz_generator.log
 INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/standalone/standalone.cls
 INPUT /usr/local/texlive/2025/texmf-dist/tex/latex/standalone/standalone.cls
