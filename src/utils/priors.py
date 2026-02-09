@@ -23,7 +23,7 @@ def S1_multimodal_prior(n_samples, G_params):
     '''
     tau2, num_modes = G_params['tau2'], G_params['num_modes']
     circle = Hypersphere(1)
-    angles = np.linspace(0, 2*np.pi, num_modes, endpoint=False)
+    angles = np.mod( np.linspace(0, 2*np.pi, num_modes, endpoint=False) + np.pi/12, 2*np.pi)
     means = np.stack([np.cos(angles), np.sin(angles)], axis=1)
     classes = np.random.randint(0, num_modes, n_samples)
     samples = np.zeros((n_samples, 2))
