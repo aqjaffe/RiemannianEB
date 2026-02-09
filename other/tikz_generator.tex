@@ -29,14 +29,14 @@
 \setlength{\imgw}{4.0cm}
 
 % --- Layout (avoid matrix-of-nodes parboxes) --------------------------
-\node[panel, text width=4cm] (p1) {
+\node[panel, text width=4.5cm] (p1) {
     \includegraphics[width=\imgw]{tikz_S1_1_part1.png}\\[1mm]
-    \panelcaption{\textbf{1} Latent truths $\Theta \sim G$ on $S^1$}
+    \panelcaption{\textbf{1} Latent variables $\Theta \sim G$}
 };
 
-\node[panel, text width=4cm, right=8mm of p1] (p2) {
+\node[panel, text width=4.5cm, right=8mm of p1] (p2) {
     \includegraphics[width=\imgw]{tikz_S1_1_part2.png}\\[1mm]
-    \panelcaption{\textbf{2} Observations $X \sim \mathcal{N}(\Theta, \sigma^2)$ }
+    \panelcaption{\textbf{2} Measurements $X\sim \mathcal{N}(\Theta, \sigma^2)$}
 };
 
 \node[panel, text width=6.8cm, below=5mm of p2, anchor=north] (p34) {
@@ -48,7 +48,7 @@
     \panelcaption{\textbf{4} Estimated score field $\sigma^2 \nabla\log \hat f$}
 };
 
-\node[panel, text width=4cm, right=8mm of p34, yshift=0mm] (p5) {
+\node[panel, text width=4.5cm, right=8mm of p34, yshift=0mm] (p5) {
     \includegraphics[width=\imgw]{tikz_S1_1_part3.png}\\[1mm]
     \panelcaption{\textbf{5} Denoised estimates $\delta(X)$}
 };

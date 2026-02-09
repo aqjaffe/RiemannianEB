@@ -6,6 +6,10 @@ from .density_estimation import density_estimate
 circle = Hypersphere(dim=1)
 sphere = Hypersphere(dim=2)
 
+plt.rcParams.update({'font.size': 12,
+                     'mathtext.fontset': 'stix',
+                     'font.family': 'serif',
+                     'font.serif':'Palatino'})
 
 # ------------------------------------------------------------------ CIRCLE ------------------------------------------------------------------------------------------------------
 def S1_scatter(X, ax, color, alpha=.5, s=5, title=None,jitter_std = 0):
