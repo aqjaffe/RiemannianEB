@@ -107,29 +107,38 @@ def plot_mcsims_IncreasingN(manifold_type, df_long, num_modes_ls, tau2_ls, savef
 
         else:
             ValueError ( "Unsupported manifold type. Supported types are 'S1' and 'S2'." )
+        df_subset = df_long[df_long["num_modes"] == num_modes]
+
+        # Empirical Denoised line only
         sns.lineplot(
-            data=df_long[df_long['num_modes'] == num_modes],
+            data=df_subset[df_subset["Loss Type"] == "Empirical Denoised"],
             x="num_samples",
             y="Loss",
-            hue="Loss Type",
-            hue_order=["Naïve","Empirical Denoised", "Oracle Denoised", "Oracle Bayes"],
-            palette={
-                "Naïve": "C0",
-                "Empirical Denoised": "C2",
-                "Oracle Denoised": "C2",
-                "Oracle Bayes": "C4",
-            },
-            style="Loss Type",  # map linestyle to hue categories
-            dashes={
-                "Naïve": "",
-                "Empirical Denoised": "",
-                "Oracle Denoised": (1, 1),
-                "Oracle Bayes": (1, 1),
-            },
+            color="C2",
+            label="Empirical Denoised",
             estimator="mean",
             errorbar=("ci", 68),  # 1-sigma style band
             marker="o",
             ax=axs[1, idx],
+        )
+
+        # Dashed constant horizontal baselines: Naïve (average) and Oracle Denoised (average)
+        naive_mean = df_subset[df_subset["Loss Type"] == "Naïve"]["Loss"].mean()
+        oracle_denoised_mean = df_subset[df_subset["Loss Type"] == "Oracle Denoised"]["Loss"].mean()
+
+        axs[1, idx].axhline(
+            naive_mean,
+            color="C0",
+            linestyle=(0, (3, 3)),
+            linewidth=2,
+            label="Naïve (avg)",
+        )
+        axs[1, idx].axhline(
+            oracle_denoised_mean,
+            color="C2",
+            linestyle=(0, (3, 3)),
+            linewidth=2,
+            label="Oracle Denoised (avg)",
         )
         # single shared legend (one row) placed below all subplots
         handles, labels = axs[1, idx].get_legend_handles_labels()
@@ -155,3 +164,28 @@ def plot_mcsims_IncreasingN(manifold_type, df_long, num_modes_ls, tau2_ls, savef
 
     plt.show()
     return fig
+
+# sns.lineplot(
+#             data=df_long[df_long['num_modes'] == num_modes],
+#             x="num_samples",
+#             y="Loss",
+#             hue="Loss Type",
+#             hue_order=["Naïve","Empirical Denoised", "Oracle Denoised", "Oracle Bayes"],
+#             palette={
+#                 "Naïve": "C0",
+#                 "Empirical Denoised": "C2",
+#                 "Oracle Denoised": "C2",
+#                 "Oracle Bayes": "C4",
+#             },
+#             style="Loss Type",  # map linestyle to hue categories
+#             dashes={
+#                 "Naïve": "",
+#                 "Empirical Denoised": "",
+#                 "Oracle Denoised": (1, 1),
+#                 "Oracle Bayes": (1, 1),
+#             },
+#             estimator="mean",
+#             errorbar=("ci", 68),  # 1-sigma style band
+#             marker="o",
+#             ax=axs[1, idx],
+#         )
