@@ -12,7 +12,7 @@ plt.rcParams.update({'font.size': 12,
                      'font.serif':'Palatino'})
 
 # ------------------------------------------------------------------ CIRCLE ------------------------------------------------------------------------------------------------------
-def S1_scatter(X, ax, color, alpha=.5, s=5, title=None,jitter_std = 0):
+def S1_scatter(X, ax, color, alpha=.5, s=5, jitter_std = 0, title=None,):
     '''
     Scatter plot on a polar projection.
     Parameters
@@ -50,7 +50,7 @@ def S1_scatter(X, ax, color, alpha=.5, s=5, title=None,jitter_std = 0):
     ax.set_ylim(bottom=0)
     return None
 
-def S1_histogram(X, nbins, ax, cmap, title= None, scale = 1,disk_r = None):
+def S1_histogram(X, nbins, ax, cmap, scale = 1,disk_r = None,title= None,):
     angles = np.mod(circle.extrinsic_to_angle(X), 2*np.pi)
     vals, bin_edges = np.histogram(angles, bins=nbins, range=(0, 2*np.pi))
     if vals.max() > 0: vals = vals / vals.max()*scale

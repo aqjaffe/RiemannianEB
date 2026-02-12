@@ -17,7 +17,7 @@ def weighted_circular_mean(thetas, weights):
     avrg_angle = np.arctan2(sin_sum, cos_sum)
     return  np.array([np.cos(avrg_angle), np.sin(avrg_angle)])
 
-def oracle_bayes(manifold_type, num_oracle_samples, G_params, sigma2, oracle_bandwidth, X_to_denoise):
+def oracle_bayes(manifold_type, num_oracle_samples, sigma2, oracle_bandwidth, X_to_denoise, G_sampler, verbose = False):
     """
     Oracle Bayes denoiser using distance-weighted Fréchet means on a Riemannian manifold.
     Parameters:
@@ -32,36 +32,31 @@ def oracle_bayes(manifold_type, num_oracle_samples, G_params, sigma2, oracle_ban
     """
     if manifold_type == 'S1':  
         manifold = Hypersphere(1)
-        Theta = S1_multimodal_prior(num_oracle_samples, G_params)
- 
     elif manifold_type == 'S2':
         manifold = Hypersphere(2)
-        Theta = S2_multimodal_prior(num_oracle_samples, G_params)
-
     elif manifold_type == 'SO3':
         manifold = SpecialOrthogonal(n=3)
-        Theta = SO3_multimodal_prior(num_oracle_samples, G_params)
     else:
         raise ValueError( "Unsupported manifold type. Supported types are 'S1', 'S2', and 'SO3'." )
 
-    X = manifold.random_riemannian_normal(Theta, 1./np.sqrt(sigma2), num_oracle_samples)
-
+    Theta = G_sampler(num_oracle_samples)
+    X = manifold.random_riemannian_normal(Theta, 1./sigma2, num_oracle_samples)
 
     denoised = []
+    dists_all = manifold.metric.dist_broadcast(X, X_to_denoise)
     for i in tqdm(range(X_to_denoise.shape[0]), desc="Denoising", leave=False):
-        dists = manifold.metric.dist_broadcast(X, X_to_denoise[i])
+        dists = dists_all[:, i]
 
         # Ensure we have at least one neighbor; if not, increase bandwidth until we do.
         bandwidth = oracle_bandwidth
         mask = dists < bandwidth  # Neighborhood
         while not np.any(mask):
-            print(f"No points found within bandwidth {bandwidth:.4f}. Increasing bandwidth.")
             bandwidth *= 2.0
             mask = dists < bandwidth
 
         nearby_Thetas = Theta[mask]
         nearby_dists = dists[mask]
-        weights = np.exp(-(nearby_dists ** 2) / (2 * oracle_bandwidth ** 2))  # Distance-based weights (Gaussian kernel)
+        weights = np.exp(-(nearby_dists ** 2) / (2 * oracle_bandwidth))  # Distance-based weights (Gaussian kernel)
         weights /= np.sum(weights)
 
         if manifold_type == 'S1':
@@ -75,7 +70,7 @@ def oracle_bayes(manifold_type, num_oracle_samples, G_params, sigma2, oracle_ban
     return np.array(denoised)
 
 
-def oracle_denoiser(manifold_type, num_oracle_samples, G_params, sigma2, oracle_bandwidth, X_to_denoise):
+def oracle_denoiser(manifold_type, num_oracle_samples, sigma2, oracle_bandwidth, X_to_denoise, G_sampler, verbose = False):
     """
     Oracle Bayes denoiser using distance-weighted Fréchet means on a Riemannian manifold.
     Parameters:
@@ -90,34 +85,31 @@ def oracle_denoiser(manifold_type, num_oracle_samples, G_params, sigma2, oracle_
     """
     if manifold_type == 'S1':  
         manifold = Hypersphere(1)
-        Theta = S1_multimodal_prior(num_oracle_samples, G_params)
- 
     elif manifold_type == 'S2':
         manifold = Hypersphere(2)
-        Theta = S2_multimodal_prior(num_oracle_samples, G_params)
-
     elif manifold_type == 'SO3':
         manifold = SpecialOrthogonal(n=3)
-        Theta = SO3_multimodal_prior(num_oracle_samples, G_params)
     else:
         raise ValueError( "Unsupported manifold type. Supported types are 'S1', 'S2', and 'SO3'." )
 
-    X = manifold.random_riemannian_normal(Theta, 1./np.sqrt(sigma2), num_oracle_samples)
+    Theta = G_sampler(num_oracle_samples)
+    X = manifold.random_riemannian_normal(Theta, 1./sigma2, num_oracle_samples)
+
     denoised = []
+    dists_all = manifold.metric.dist_broadcast(X, X_to_denoise)
     for i in tqdm(range(X_to_denoise.shape[0]), desc="Denoising", leave=False):
-        dists = manifold.metric.dist_broadcast(X, X_to_denoise[i])
+        dists = dists_all[:, i]
 
         # Ensure we have at least one neighbor; if not, increase bandwidth until we do.
         bandwidth = oracle_bandwidth
         mask = dists < bandwidth  # Neighborhood
         while not np.any(mask):
-            print(f"No points found within bandwidth {bandwidth:.4f}. Increasing bandwidth.")
             bandwidth *= 2.0
             mask = dists < bandwidth
 
         nearby_Thetas = Theta[mask]
         nearby_dists = dists[mask]
-        weights = np.exp(-(nearby_dists ** 2) / (2 * oracle_bandwidth ** 2))  # Distance-based weights (Gaussian kernel)
+        weights = np.exp(-(nearby_dists ** 2) / (2 * oracle_bandwidth ))  # Distance-based weights (Gaussian kernel)
         weights /= np.sum(weights)
 
         base_points = np.repeat(X_to_denoise[i][None, :], nearby_Thetas.shape[0], axis=0)

@@ -25,28 +25,40 @@ def denoiser(manifold_type, X, M, rho, sigma2, X_to_denoise, densityIn=None, ste
         hat_f, hat_grad_f = densityIn
 
     if manifold_type == 'S1':
-        S1 = Hypersphere(1)
-        hat_score = hat_grad_f / np.maximum(hat_f.ravel(), rho)
-        X_complex = X_to_denoise[:, 0] + 1j * X_to_denoise[:, 1]
-        delta_complex = X_complex * np.exp(1j * stepsize* sigma2 * hat_score)
-        delta = np.column_stack([delta_complex.real, delta_complex.imag])
+        manifold = Hypersphere(1)
+        hat_score = hat_grad_f /  np.maximum(hat_f.reshape(-1, 1), rho)
+        # X_complex = X_to_denoise[:, 0] + 1j * X_to_denoise[:, 1]
+        # delta_complex = X_complex * np.exp(1j * stepsize * sigma2 * hat_score)
+        # delta = np.column_stack([delta_complex.real, delta_complex.imag])
+
 
     if manifold_type == 'S2':
-        S2 = Hypersphere(2)
+        manifold = Hypersphere(2)
         hat_score = hat_grad_f / np.maximum(hat_f[:, np.newaxis], rho)
-        tangent_vecs = X_to_denoise + stepsize * sigma2 * hat_score
-        delta =  S2.metric.exp(tangent_vecs, X_to_denoise)
+
+        # hat_score = hat_grad_f / np.maximum(hat_f, rho).reshape(-1,1)
+        # delta = np.zeros((X.shape[0],3))
+        # for i in range(X.shape[0]):
+        #     x_ = X[i,:].reshape(-1,1)
+        #     v = X[i,:] + sigma2*(np.eye(3) - x_@ x_.T)@hat_score[i,:]
+        #     delta[i,:] = S2.metric.exp(v, X[i,:])
+
     
     if manifold_type == 'SO3':
-        SO3 = SpecialOrthogonal(n=3)
+        manifold = SpecialOrthogonal(n=3)
         hat_score = hat_grad_f / np.maximum(hat_f[:, np.newaxis, np.newaxis], rho)
-        tangent_vecs = X_to_denoise + stepsize * sigma2 * hat_score
-        delta = SO3.projection(SO3.metric.exp(tangent_vecs, X_to_denoise))
+    
+    tangent_vecs = X_to_denoise + hat_score
+    delta =  manifold.metric.exp( stepsize * sigma2 * tangent_vecs, X_to_denoise)
+    # delta = manifold.projection(manifold.metric.exp(tangent_vecs, X_to_denoise))
 
     if reps >1 : 
         return denoiser(manifold_type, X, M, rho, sigma2, delta, densityIn=(hat_f, hat_grad_f), stepsize = stepsize, reps = reps-1)
     else:
         return delta    
+
+
+
 
 
     # if manifold_type == 'S1':
