@@ -1,18 +1,49 @@
 import numpy as np
 from geomstats.geometry.hypersphere import Hypersphere
+from geomstats.geometry.special_orthogonal import SpecialOrthogonal
 circle = Hypersphere(dim=1)
 sphere = Hypersphere(dim=2)
 
-def uniform_sampler(num_samples, manifold_type):
+
+def uniform_sampler(manifold_type, num_samples):
     if manifold_type == 'S1':
-        return circle.random_uniform(num_samples)
+        manifold = Hypersphere(1)
     elif manifold_type == 'S2':
-        return sphere.random_uniform(num_samples)
-    else:
-        raise NotImplementedError(f"Uniform sampling for {manifold_type} is not implemented yet.")
+        manifold = Hypersphere(2)
+    elif manifold_type == 'SO3':
+        manifold = SpecialOrthogonal(n=3)
+    else: 
+        raise ValueError( "Unsupported manifold type. Supported types are 'S1', 'S2', and 'SO3'." )
+    return manifold.random_uniform(num_samples)
 
 
-def multimodal_sampler(n_samples,manifold_type, G_params):
+def equator_sampler(manifold_type, num_samples, tau2=0.01):
+    """
+    Sample near an equator of S2 (great circle) with small Gaussian perturbation,
+    then project back to the sphere.
+
+    Parameters
+    ----------
+    manifold_type : str
+        Must be 'S2'.
+    num_samples : int
+        Number of samples.
+    tau2 : float
+        Standard deviation of ambient Gaussian noise before projection.
+    Returns
+    -------
+    X : ndarray, shape (num_samples, 3)
+        Points on S2 concentrated near the chosen equator.
+    """
+    if manifold_type != "S2":
+        raise ValueError("equator_sampler is only implemented for manifold_type='S2'.")
+    theta = np.random.uniform(0.0, 2.0 * np.pi, size=num_samples)
+    c, s = np.cos(theta), np.sin(theta)
+    X = np.stack([c, s, np.zeros(num_samples)], axis=1)
+    if tau2 and tau2 > 0:
+        X = Hypersphere(2).random_riemannian_normal(X, 1 / tau2, num_samples)
+    return X
+def multimodal_sampler(manifold_type, n_samples, tau2, num_modes):
     '''
     Sample from a multimodal prior on the manifold
     Parameters
@@ -29,7 +60,6 @@ def multimodal_sampler(n_samples,manifold_type, G_params):
         Samples drawn from the multimodal prior on S^1.
     '''
     if manifold_type == 'S1':
-        tau2, num_modes = G_params['tau2'], G_params['num_modes']
         angles = np.mod( np.linspace(0, 2*np.pi, num_modes, endpoint=False) + np.pi/12, 2*np.pi)
         means = np.stack([np.cos(angles), np.sin(angles)], axis=1)
         classes = np.random.randint(0, num_modes, n_samples)
@@ -41,7 +71,6 @@ def multimodal_sampler(n_samples,manifold_type, G_params):
         return samples
     
     elif manifold_type == 'S2':
-        num_modes, tau2  = G_params['num_modes'], G_params['tau2']
         if num_modes == 1:
             mus = np.array([[0, 1, 0]])
         elif num_modes == 2:

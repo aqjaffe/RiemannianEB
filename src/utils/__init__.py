@@ -4,6 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 from tqdm import tqdm
+import matplotlib as mpl
 from geomstats.geometry.special_orthogonal import SpecialOrthogonal
 from geomstats.geometry.special_orthogonal import _SpecialOrthogonal3Vectors
 
