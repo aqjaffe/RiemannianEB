@@ -42,7 +42,7 @@ def mcsims_IncreasingSigma(manifold_type, n_samples, G_sampler_ls, sigma2_ls, nu
                 oracle_delta_T = oracle_denoiser(manifold_type, num_oracle_samples, sigma2,oracle_bandwidth, X, G.sample)
                 loss_oracleTs.append((manifold.metric.squared_dist(oracle_delta_T, Theta)).mean())
                 if bayes:
-                    oracle_delta_B = oracle_bayes(manifold_type, num_oracle_samples, sigma2, oracle_bandwidth, X, G.sample)
+                    oracle_delta_B = oracle_bayes__kernel(manifold_type, num_oracle_samples, sigma2, oracle_bandwidth, X, G.sample)
                     loss_oracleBs.append((manifold.metric.squared_dist(oracle_delta_B, Theta)).mean())
 
             records.append(pd.DataFrame({
@@ -70,7 +70,6 @@ def mcsims_IncreasingSigma(manifold_type, n_samples, G_sampler_ls, sigma2_ls, nu
         value_name="Loss",
     )
     return df_long
-
 
 
 
@@ -148,6 +147,7 @@ def mcsims_IncreasingN(
                         "num_samples": int(n_samples),
                         "rho_star": rho_star,
                         "median_emp_minus_oracle": float(np.median(diff)),
+                        "mean_emp_minus_oracle": float(np.mean(diff)),
                         "std_emp_minus_oracle": float(np.std(diff)),
                     }
                 )

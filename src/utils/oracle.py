@@ -3,7 +3,7 @@ from tqdm import tqdm
 from geomstats.geometry.hypersphere import Hypersphere
 from geomstats.geometry.special_orthogonal import SpecialOrthogonal
 from geomstats.learning.frechet_mean import FrechetMean
-
+from .tools import get_manifold
 from .priors import *
 
 def weighted_circular_mean(thetas, weights):
@@ -17,7 +17,47 @@ def weighted_circular_mean(thetas, weights):
     avrg_angle = np.arctan2(sin_sum, cos_sum)
     return  np.array([np.cos(avrg_angle), np.sin(avrg_angle)])
 
-def oracle_bayes(manifold_type, num_oracle_samples, sigma2, oracle_bandwidth, X_to_denoise, G_sampler, verbose = False):
+
+def oracle_denoiser(manifold_type, oracle_samples, sigma2, X_to_denoise, G = None ):
+        '''
+        Oracle denoiser using the score function estimated from samples of the generative model.
+        Parameters:
+        - manifold_type: 'S1', 'S2', or 'SO3'
+        - num_oracle_samples: Number of samples to use for estimating the score function
+        - G: Generative model with a .sample(num_samples) method that returns samples on the manifold
+        - X_to_denoise: shape (M, D) - Noisy points to denoise
+        - sigma2: Noise variance
+        Returns:
+        - oracle_delta: shape (M, D) - Denoised points on the manifold in extrinsic coordinates
+        '''
+
+        manifold = get_manifold(manifold_type)    
+        if np.isscalar(oracle_samples):
+            if G is None:
+                raise ValueError("G must be provided if oracle_samples is a scalar.") 
+            G_samples = G(oracle_samples)
+        else: 
+            G_samples = oracle_samples
+
+
+        # ------ Oracle score estimation
+        oracle_score = []
+        for x in X_to_denoise:
+        # for x in tqdm(X_to_denoise, desc="Denoising", leave=False):
+            dists = manifold.metric.dist(x, G_samples)      # shape (N,)
+            logs  = manifold.metric.log(x, G_samples)       # shape (N, dim)
+            weights = np.exp(-(dists ** 2) / (2 * sigma2))
+            oracle_score.append(
+                - (1 / sigma2) * (weights[:, None] * logs).sum(axis=0) / weights.sum()
+            )
+        oracle_score = np.array(oracle_score)
+        # ------ Oracle denoising
+        oracle_tangent_vecs = X_to_denoise +  sigma2 * oracle_score
+        oracle_delta =  manifold.metric.exp( oracle_tangent_vecs, X_to_denoise)
+        return oracle_delta
+
+
+def oracle_bayes__kernel(manifold_type, num_oracle_samples, sigma2, oracle_bandwidth, X_to_denoise, G_sampler, verbose = False):
     """
     Oracle Bayes denoiser using distance-weighted Fréchet means on a Riemannian manifold.
     Parameters:
@@ -30,14 +70,8 @@ def oracle_bayes(manifold_type, num_oracle_samples, sigma2, oracle_bandwidth, X_
     Returns:
     - denoised: shape (M, D) - Denoised points on the manifold
     """
-    if manifold_type == 'S1':  
-        manifold = Hypersphere(1)
-    elif manifold_type == 'S2':
-        manifold = Hypersphere(2)
-    elif manifold_type == 'SO3':
-        manifold = SpecialOrthogonal(n=3)
-    else:
-        raise ValueError( "Unsupported manifold type. Supported types are 'S1', 'S2', and 'SO3'." )
+    
+    manifold = get_manifold(manifold_type)
 
     Theta = G_sampler(num_oracle_samples)
     X = manifold.random_riemannian_normal(Theta, 1./sigma2, num_oracle_samples)
@@ -70,7 +104,7 @@ def oracle_bayes(manifold_type, num_oracle_samples, sigma2, oracle_bandwidth, X_
     return np.array(denoised)
 
 
-def oracle_denoiser(manifold_type, num_oracle_samples, sigma2, oracle_bandwidth, X_to_denoise, G_sampler, verbose = False):
+def oracle_denoiser__kernel(manifold_type, num_oracle_samples, sigma2, oracle_bandwidth, X_to_denoise, G_sampler, verbose = False):
     """
     Oracle Bayes denoiser using distance-weighted Fréchet means on a Riemannian manifold.
     Parameters:
@@ -83,14 +117,8 @@ def oracle_denoiser(manifold_type, num_oracle_samples, sigma2, oracle_bandwidth,
     Returns:
     - denoised: shape (M, D) - Denoised points on the manifold
     """
-    if manifold_type == 'S1':  
-        manifold = Hypersphere(1)
-    elif manifold_type == 'S2':
-        manifold = Hypersphere(2)
-    elif manifold_type == 'SO3':
-        manifold = SpecialOrthogonal(n=3)
-    else:
-        raise ValueError( "Unsupported manifold type. Supported types are 'S1', 'S2', and 'SO3'." )
+
+    manifold = get_manifold(manifold_type)
 
     Theta = G_sampler(num_oracle_samples)
     X = manifold.random_riemannian_normal(Theta, 1./sigma2, num_oracle_samples)

@@ -7,8 +7,10 @@ from tqdm import tqdm
 import matplotlib as mpl
 from geomstats.geometry.special_orthogonal import SpecialOrthogonal
 from geomstats.geometry.special_orthogonal import _SpecialOrthogonal3Vectors
+from matplotlib.collections import PolyCollection
+from sklearn.model_selection import KFold
 
-plt.rcParams.update({'font.size': 10,
+plt.rcParams.update({'font.size': 13,
                      'mathtext.fontset': 'stix',
                      'font.family': 'serif',
                      'font.serif':'Palatino'})
@@ -18,3 +20,5 @@ from .density_estimation import *
 from .oracle import *
 from .plotting import *
 from .priors import *
+from .tools import *
+from .crossvalidation import *

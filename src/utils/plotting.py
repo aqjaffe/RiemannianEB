@@ -2,7 +2,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from geomstats.geometry.hypersphere import Hypersphere
-from .density_estimation import density_estimate
+from matplotlib.collections import PolyCollection
+from .density_estimation import *
+
 circle = Hypersphere(dim=1)
 sphere = Hypersphere(dim=2)
 
@@ -11,8 +13,10 @@ plt.rcParams.update({'font.size': 12,
                      'font.family': 'serif',
                      'font.serif':'Palatino'})
 
+
+
 # ------------------------------------------------------------------ CIRCLE ------------------------------------------------------------------------------------------------------
-def S1_scatter(X, ax, color, alpha=.5, s=5, jitter_std = 0, title=None,):
+def S1scatter(X, ax, color, alpha=.5, s=5, jitter_std = 0, title=None,):
     '''
     Scatter plot on a polar projection.
     Parameters
@@ -87,7 +91,7 @@ def S1_histogram(X, nbins, ax, cmap, scale = 1,disk_r = None,title= None):
 
 
 
-def S1_smooth_histogram(X, M, ax, cmap, title = None):
+def S1_smooth_histogram1(X, M, ax, cmap, title = None):
     f_scale = 0.3
     res = 100
     bottom = .5
@@ -162,6 +166,28 @@ def S1_score_quiver(X, M, rho, ax, res = 50, title = None):
         ax.set_title(title, fontsize = 15)
     return None
 
+def S1_smooth_histogram(Theta, ax,cmap, nbins = 50,  kappa=9 ,f_scale = 0.3,bottom = 0.105,top = .5,disk_r = 0.1):
+    manifold = Hypersphere(1)
+    grid_I = np.linspace(0, 2*np.pi, nbins)
+    on_X = manifold.intrinsic_to_extrinsic_coords( grid_I[:, None])
+    hat_f = kernel_density_estimate("S1", Theta,  on_X, kappa)[1]
+    hat_pos_f = np.maximum(hat_f, 0)
+    normalised_hat_f = (hat_pos_f - hat_pos_f.min()) / (hat_pos_f.max() - hat_pos_f.min() + 1e-10)
+    verts = [[
+            (grid_I[i], bottom),
+            (grid_I[i], bottom + f_scale * hat_pos_f[i]), (grid_I[i+1], bottom + f_scale * hat_pos_f[i+1]),
+            # (grid_I[i],top), (grid_I[i+1], bottom + top),
+            (grid_I[i+1], bottom)
+        ] for i in range(len(grid_I) - 1)] # Create polygon vertices for each segment
+    poly = PolyCollection(verts, facecolors=plt.colormaps[cmap](normalised_hat_f[:-1]), 
+                        alpha=0.85, edgecolors='none')
+    ax.add_collection(poly)
+
+    ax.set_ylim(0, bottom + hat_f.max()*f_scale)  
+    ax.set_yticks([])
+    ax.bar(0, disk_r, width=2*np.pi, bottom=0, color="white", edgecolor="none", align="edge", zorder=3)
+    ax.plot(grid_I, disk_r*np.ones_like(grid_I), color='black', linewidth=1.2, zorder=4)
+    return None
 # ------------------------------------------------------------------ SHPERE ------------------------------------------------------------------------------------------------------
 def S2grid(grid_resolution=50):
     # Grid on S^2 (theta = colatitude, phi = longitude)
@@ -227,7 +253,7 @@ def S2plot_quiver(fig, density_args, rho, mode, ax, skip = 1, grid_resolution = 
     fig.colorbar(im,ax= ax,  orientation='horizontal', fraction=0.05, pad=0.04)
     return None
 
-def S2scatter(X, ax, color, alpha=.5, s=5, lw=.5, title = None):
+def S2scatter(X, ax, color, alpha=.5, s=5, lw=.5, title = None, marker = None):
     '''
     Scatter plot on a Mollweide projection.
     Parameters
@@ -250,7 +276,8 @@ def S2scatter(X, ax, color, alpha=.5, s=5, lw=.5, title = None):
     phi = X_sph[:, 1]    # longitude
     phi_mw = phi - np.pi           # shift longitude from [0, 2π] to [-π, π]
     theta_mw = np.pi/2 - theta     # convert colatitude to latitude [-π/2, π/2]
-    ax.scatter(phi_mw, theta_mw, s=s, alpha=alpha, color=color)
+    if marker is None:
+        ax.scatter(phi_mw, theta_mw, s=s, alpha=alpha, color=color)
     ax.grid(True, color='gray', lw=lw)
     if title is not None:
         ax.set_title(title, fontsize = 15)

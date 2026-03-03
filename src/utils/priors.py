@@ -1,5 +1,6 @@
 import numpy as np
 from geomstats.geometry.hypersphere import Hypersphere
+from geomstats.geometry.product_manifold import ProductManifold
 from geomstats.geometry.special_orthogonal import SpecialOrthogonal
 circle = Hypersphere(dim=1)
 sphere = Hypersphere(dim=2)
@@ -43,6 +44,8 @@ def equator_sampler(manifold_type, num_samples, tau2=0.01):
     if tau2 and tau2 > 0:
         X = Hypersphere(2).random_riemannian_normal(X, 1 / tau2, num_samples)
     return X
+
+
 def multimodal_sampler(manifold_type, n_samples, tau2, num_modes):
     '''
     Sample from a multimodal prior on the manifold
