@@ -127,3 +127,54 @@ def converenge_rate_experiment__CV( manifold_type, G, n_samples_ls, M_grid, rho,
             }
         )
     return pd.DataFrame(all_records)
+
+
+
+def converenge_rate_experiment( manifold_type, G, n_samples_ls, M, rho, sigma2, test_size, num_oracle_samples, NMC):
+    manifold = get_manifold(manifold_type)
+    
+    all_records = []
+    oracle_samples = G.sample(num_oracle_samples)
+    for n_samples in n_samples_ls:
+        empirical_losses = np.zeros(NMC, dtype=float)
+        oracle_losses    = np.zeros(NMC, dtype=float)
+        displacements    = np.zeros(NMC, dtype=float)
+        excess_loss      = np.zeros(NMC, dtype=float)
+        
+        for imc in tqdm(range(NMC),
+                        desc=f'G "{G.name}", sigma2={sigma2}, n={n_samples}',leave=False,):
+            
+            Theta = G.sample(n_samples)
+            X = manifold.random_riemannian_normal(Theta, 1.0 / sigma2, n_samples)
+
+            test_Theta = G.sample(test_size)
+            test_X = manifold.random_riemannian_normal(test_Theta, 1.0 / sigma2, test_size)
+                    
+            # ------ Oracle
+            oracle_delta =  oracle_denoiser(manifold_type, oracle_samples, sigma2, test_X)
+            oracle_losses[imc] = ( manifold.metric.dist_broadcast(oracle_delta, test_Theta) ** 2).mean()
+
+            # ------ Empirical | select M* by CV
+            delta = denoiser(manifold_type, X, M, rho, sigma2, test_X )
+            empirical_losses[imc] = ( manifold.metric.dist_broadcast(delta, test_Theta) ** 2).mean()
+            displacements[imc] = ( manifold.metric.dist_broadcast(oracle_delta, delta) ** 2).mean()
+            excess_loss[imc] = empirical_losses[imc] - oracle_losses[imc]
+
+        all_records.append(
+            {
+                "G": G.name,
+                "sigma2": float(sigma2),
+                "num_samples": int(n_samples),
+                "M": M,
+                "rho": rho,
+                "mean_emp_loss": float(empirical_losses.mean()),
+                "std_emp_loss": float(empirical_losses.std()),
+                "mean_oracle_loss": float(oracle_losses.mean()),
+                "std_oracle_loss": float(oracle_losses.std()),
+                "mean_displacement": float(displacements.mean()),
+                "std_displacement": float(displacements.std()),
+                "mean_excess_loss": float(excess_loss.mean()),
+                "std_excess_loss": float(excess_loss.std()),
+            }
+        )
+    return pd.DataFrame(all_records)

@@ -46,7 +46,6 @@ def density_estimate(manifold_type, X, M, on_X, grad=True, laplacian=False):
             hat_grad_f = d_f_d_phi[:, None] * tangent_basis
 
         if laplacian:
-            # Δ e^{ikφ} = -k^2 e^{ikφ}
             hat_lap_f = ((-k**2) * moments * exp_k_phi).sum(axis=0).real * norm_factor
 
 
@@ -64,7 +63,6 @@ def density_estimate(manifold_type, X, M, on_X, grad=True, laplacian=False):
             poly += (2*m + 1) * Pm
             poly_deriv += (2*m + 1) * Pm.deriv()
 
-            # Δ P_m = -m(m+1) P_m
             lap_poly += (2*m + 1) * (-m*(m+1)) * Pm
 
         hat_f = np.zeros(on_X.shape[0])
@@ -116,8 +114,6 @@ def density_estimate(manifold_type, X, M, on_X, grad=True, laplacian=False):
             hat_grad_f = np.einsum('m,mij,ikl->jkl', weights, p_deriv, X)
 
         if laplacian:
-            # Δ irreducible representation degree m eigenvalue:
-            # λ_m = -m(m+1)
             lap_eigs = -m_vals * (m_vals + 1)
             hat_lap_f = np.einsum('m,m,mij->j', weights, lap_eigs, p_vals)
 
