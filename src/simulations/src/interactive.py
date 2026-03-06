@@ -4,7 +4,7 @@ from functools import lru_cache
 import io
 from utils import *
 from .plot import *
-def plot_mcratesims_interactive(manifold_type, results, results_ocv, G_sampler_ls, selected_NMC, selected_sigma2, extselected_Mrho=None):
+def plot_mcratesims_interactive(manifold_type, results, results_ocv, params, G_sampler_ls, ID, selected_sigma2, extselected_Mrho=None):
     @lru_cache(maxsize=None)
     def _cached_G_image(manifold_type, G):
         """Render plot_G to a PNG bytes buffer and cache it."""
@@ -32,7 +32,7 @@ def plot_mcratesims_interactive(manifold_type, results, results_ocv, G_sampler_l
         for idx, G in enumerate(G_sampler_ls):
             # Filter main results for the interactive lines
             df_G = results[(results.G == G.name)
-                            & (results.NMC == selected_NMC)
+                            & (results.ID == ID)
                             & (results.sigma2 == selected_sigma2)].copy().sort_values('num_samples')
             df_rec = df_G[(df_G.M == selected_M)
                           & (df_G.rho == selected_rho)
@@ -41,8 +41,8 @@ def plot_mcratesims_interactive(manifold_type, results, results_ocv, G_sampler_l
             # Filter CV results
             df_cv_G = None
             if results_ocv is not None:
-                df_cv_G = results_ocv[(results_ocv.G == G.name) & (results_ocv.NMC == selected_NMC)].copy().sort_values('num_samples')
-
+                df_cv_G = results_ocv[(results_ocv.G == G.name) & (results_ocv.ID == ID)].copy().sort_values('num_samples')
+                NMC = params['NMC']
             for i, variable in enumerate(['excess_loss', 'displacement']):
                 ax = axs[i, idx]
                 if i == 0:
@@ -53,7 +53,7 @@ def plot_mcratesims_interactive(manifold_type, results, results_ocv, G_sampler_l
                 if not df_rec.empty:
                     x = df_rec["num_samples"].to_numpy(dtype=float)
                     y = df_rec[col].to_numpy(dtype=float)
-                    ci = 1.96 * df_rec['std_' + variable].to_numpy(dtype=float) / np.sqrt(selected_NMC)
+                    ci = 1.96 * df_rec['std_' + variable].to_numpy(dtype=float) / np.sqrt(NMC)
                     eps = max(1e-10, y[y > 0].min() / 10 if any(y > 0) else 1e-10)
                     y_plot, y_lo, y_hi = np.clip(y, eps, None), np.clip(y - ci, eps, None), np.clip(y + ci, eps, None)
                     ax.plot(x, y_plot, label=f"M={selected_M}, ρ={selected_rho}", color='tab:blue', lw=2)

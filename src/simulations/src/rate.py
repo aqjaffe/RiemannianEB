@@ -2,8 +2,7 @@ from utils import *
 
 from tqdm.auto import tqdm
 
-def converenge_rate_experiment(manifold_type, G, n_samples_ls, M_grid, rho_grid, sigma2, test_size, num_oracle_samples, NMC, cv = False):
-
+def converenge_rate_experiment(manifold_type, G, n_samples_ls, M_grid, rho_grid, sigma2, test_size, num_oracle_samples, NMC, timenow, cv = False):
     manifold = get_manifold(manifold_type)
     oracle_samples = G.sample(num_oracle_samples)
 
@@ -58,12 +57,10 @@ def converenge_rate_experiment(manifold_type, G, n_samples_ls, M_grid, rho_grid,
     for ixn, n_samples in enumerate(n_samples_ls):
         all_oracleandcv_results.append(
             {
-                'G': G.name,
+                'ID' : float(timenow),
+                'G': str(G.name),
                 'sigma2': float(sigma2),
-                'NMC' : NMC,
                 'num_samples': int(n_samples),
-                'rhos_grid': rho_grid,
-                'Ms_grid' : M_grid,
                 'mean_naive_loss': float(naive_loss.mean()),
                 'std_naive_loss': float(naive_loss.std()),
                 'mean_oracle_loss': float(oracle_loss.mean()),
@@ -74,8 +71,8 @@ def converenge_rate_experiment(manifold_type, G, n_samples_ls, M_grid, rho_grid,
                 'std_cv_excess_loss': float((cv_loss[:,ixn ] - oracle_loss).std()) if cv else None,
                 'mean_cv_displacement': float(cv_displacements[:,ixn].mean()) if cv else None,
                 'std_cv_displacement': float(cv_displacements[:,ixn].std()) if cv else None,
-                'cv_Ms_star': cv_Ms_star[:, ixn] if cv else None,
-                'cv_rhos_star': cv_rhos_star[:, ixn] if cv else None,
+                'cv_Ms_star': (cv_Ms_star[:, ixn]).astype(int) if cv else None,
+                'cv_rhos_star': (cv_rhos_star[:, ixn]).astype(float) if cv else None,
             }
         )
     
@@ -84,6 +81,7 @@ def converenge_rate_experiment(manifold_type, G, n_samples_ls, M_grid, rho_grid,
             for ixrho, rho in enumerate(rho_grid):
                 all_records.append(
                     {
+                        'ID' : float(timenow),
                         'G': G.name,
                         'sigma2': float(sigma2),
                         'num_samples': int(n_samples),

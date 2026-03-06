@@ -1,7 +1,10 @@
 from geomstats.geometry.hypersphere import Hypersphere
 from geomstats.geometry.special_orthogonal import SpecialOrthogonal
 from geomstats.geometry.product_manifold import ProductManifold
+import numpy as np
 
+def parse_np_array(s):
+    return np.fromstring(s.strip('[]'), sep=' ')
 
 def sq_loss(manifold, X, delta):
     return ( manifold.metric.dist_broadcast(X, delta) ** 2).mean()

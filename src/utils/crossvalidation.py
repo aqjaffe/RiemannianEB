@@ -24,17 +24,15 @@ from tqdm import tqdm
 from sklearn.model_selection import KFold
 import matplotlib.gridspec as gridspec
     
-def plot_cv_distributions_split(results_ocv, selected_NMC, selected_sigma2):
+def plot_cv_distributions_split(results_ocv,params ID, selected_sigma2):
 
     # Filter for the specific NMC
-    df = results_ocv[(results_ocv.NMC == selected_NMC) & (results_ocv.sigma2 == selected_sigma2)] .copy()
+    df = results_ocv[(results_ocv.ID == ID) & (results_ocv.sigma2 == selected_sigma2)] .copy()
     
     # M_grid = list(map(int, results_ocv.Ms_grid.values[0].strip('[]').split()))
     # rho_grid = ast.literal_eval(results_ocv.rhos_grid.values[0])
-
-    M_grid = df.Ms_grid.values[0]
-    rho_grid = df.rhos_grid.values[0]
-
+    M_grid = params['M_grid']
+    rho_grid = params['rho_grid']
     unique_Gs = df['G'].unique()
     unique_ns = sorted(df['num_samples'].unique())
     
@@ -85,7 +83,7 @@ def plot_cv_distributions_split(results_ocv, selected_NMC, selected_sigma2):
                 fig.text(0.08, 1 - (r + 0.5)/n_rows, f"G: {g_name}", 
                          va='center', rotation='vertical', fontsize=12, fontweight='bold')
 
-    plt.suptitle(f"Split CV Distributions: M (Blue) vs ρ (Red) | NMC={selected_NMC}", fontsize=20, y=0.95)
+    plt.suptitle(f"Split CV Distributions: M (Blue) vs ρ (Red)", fontsize=20, y=0.95)
     plt.show()
 
 def plot_density_cv_scores(cv_scores, M_grid, rho_grid, title="CV Scores", ax = None):
