@@ -117,7 +117,7 @@ def mcsims_IncreasingN(
                     for ixrho, rho in enumerate(rho_ls):
                         delta = denoiser(manifold_type, X, M, rho, sigma2, test_X)
                         delta_by_rho_losses[imc, ixrho] = (
-                            manifold.metric.dist_broadcast(delta, test_Theta) ** 2
+                            sq_loss(manifold, delta, test_Theta) ** 2
                         ).mean()
 
                     oracle_delta_T = oracle_denoiser(
@@ -128,9 +128,7 @@ def mcsims_IncreasingN(
                         test_X,
                         G.sample,
                     )
-                    oracle_losses[imc] = (
-                        manifold.metric.dist_broadcast(oracle_delta_T, test_Theta) ** 2
-                    ).mean()
+                    oracle_losses[imc] = sq_loss(manifold, oracle_delta_T, test_Theta)
 
                 # select rho* using mean Empirical Denoised loss across MC (same as before)
                 rho_star_idx = int(np.argmin(delta_by_rho_losses.mean(axis=0)))

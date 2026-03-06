@@ -20,5 +20,5 @@ from .density_estimation import *
 from .oracle import *
 from .plotting import *
 from .priors import *
-from .tools import *
+from .helpers import *
 from .crossvalidation import *

@@ -1,4 +1,120 @@
 from utils import *
+
+def plot_G(manifold_type, G, fig, ax):
+
+    if manifold_type == "S1":
+        manifold = Hypersphere(1)
+        ss = ax.get_subplotspec()
+        ax.remove()
+        ax = fig.add_subplot(ss, polar=True)
+        ax.set_title(f"'{G.name}'", fontsize=14)
+
+        Theta = G.sample(1000)
+        Theta = manifold.intrinsic_to_extrinsic_coords(manifold.extrinsic_to_intrinsic_coords(Theta) - np.pi / 12)
+
+        f_scale = 0.3
+        bottom = 0.105
+        top = .5
+        disk_r = 0.1
+        grid_I = np.linspace(0, 2*np.pi, 50)
+        on_X = manifold.intrinsic_to_extrinsic_coords( grid_I[:, None])
+        hat_f = kernel_density_estimate("S1", Theta,  on_X, 9)[1]
+        hat_pos_f = np.maximum(hat_f, 0)
+        normalised_hat_f = (hat_pos_f - hat_pos_f.min()) / (hat_pos_f.max() - hat_pos_f.min() + 1e-10)
+        verts = [[
+                (grid_I[i], bottom),
+                (grid_I[i], bottom + f_scale * hat_pos_f[i]), (grid_I[i+1], bottom + f_scale * hat_pos_f[i+1]),
+                # (grid_I[i],top), (grid_I[i+1], bottom + top),
+                (grid_I[i+1], bottom)
+            ] for i in range(len(grid_I) - 1)] # Create polygon vertices for each segment
+        poly = PolyCollection(verts, facecolors=plt.colormaps['Reds'](normalised_hat_f[:-1]), 
+                            alpha=0.85, edgecolors='none')
+        ax.add_collection(poly)
+
+        ax.set_ylim(0, bottom + hat_f.max()*f_scale)  
+        ax.set_yticks([])
+        ax.bar(0, disk_r, width=2*np.pi, bottom=0, color="white", edgecolor="none", align="edge", zorder=3)
+        ax.plot(grid_I, disk_r*np.ones_like(grid_I), color='black', linewidth=1.2, zorder=4)
+        # S1_histogram(Theta, 30, ax, "Reds")
+
+    elif manifold_type == "S2":
+        manifold = Hypersphere(2)
+        ss = ax.get_subplotspec()
+        ax.remove()
+        ax = fig.add_subplot(ss, projection="mollweide")
+        ax.set_xticks([]); ax.set_yticks([])
+        ax.grid(True, alpha=0.3)
+        ax.set_title(f"'{G.name}'", fontsize=14)
+
+        grid_resolution = 100
+        grid, grid_theta, grid_phi = S2grid(grid_resolution)
+        hat_f = kernel_density_estimate("S2", G.sample(1000),grid, 20)[1].reshape(
+            grid_resolution, grid_resolution
+        )
+        ax.pcolormesh(
+            grid_phi - np.pi,
+            np.pi / 2 - grid_theta,
+            hat_f,
+            alpha=0.8,
+            shading="auto",
+            cmap="Reds",
+            vmin=0.5 if G.name == "uniform" else None,
+            vmax=0.5 if G.name == "uniform" else None,
+        )
+    else:
+        raise ValueError("Unsupported manifold type. Supported types are 'S1' and 'S2'.")
+
+
+
+def plot_mcratesims(manifold_type, results, G_sampler_ls,selected_M, selected_rho, selected_NMC, savefig=None):
+
+    K = len(G_sampler_ls)
+
+    # Make row 0 shorter than rows 1 and 2
+    fig, axs = plt.subplots(3, K, figsize=(20, 10),
+                            gridspec_kw={"height_ratios": [0.65, 1.0, 1.0], "hspace": 0.35, "wspace": 0.25},)
+
+    for idx, G in enumerate(G_sampler_ls):
+        plot_G(manifold_type, G, fig, axs[0, idx])
+
+        df_rec = results[
+            (results.G == G.name) &
+            (results.M == selected_M) &
+            (results.rho == selected_rho) &
+            (results.NMC == selected_NMC)
+            ].sort_values("num_samples").copy()
+        
+        df_rec['mean_excess_loss'] = df_rec['mean_emp_loss'] -  (df_rec['mean_oracle_loss'] - df_rec['std_oracle_loss'])
+        
+        # display( df_rate[['num_samples', 'M', 'rho', 'mean_excess_loss', 'mean_displacement']])
+        for i, variable in enumerate([ 'excess_loss', 'displacement']):
+            x = df_rec["num_samples"].to_numpy(dtype=float)
+            y = df_rec["mean_" + variable].to_numpy(dtype=float)
+            ci  = 1.96 * df_rec["std_" + variable].to_numpy(dtype=float) / np.sqrt(selected_NMC)
+
+            # avoid log(0) / negative values
+            eps = y[y > 0].min()/10 
+            y_plot = np.clip(y, eps, None); y_lo = np.clip(y - ci, eps, None); y_hi = np.clip(y + ci, eps, None)
+            axs[i+1, idx].plot(x, y_plot,label="mean_displacement")
+            axs[i+1, idx].fill_between(x, y_lo, y_hi, alpha=0.2, label="95% CI")
+
+            axs[i+1, idx].set_xscale("log"); axs[i+1, idx].set_yscale("log")
+            if i == 0:
+                axs[i+1, idx].set_xlabel("n_samples")
+            axs[i+1, idx].grid(True, which="both", ls="--", alpha=0.4)
+
+            # fit in log-log space: log(y) = a + b*log(x)
+            b, _ = np.polyfit(np.log(x)[np.log(y) == np.log(y)], np.log(y)[np.log(y) == np.log(y)], 1)
+            axs[i+1, idx].set_title(f"{variable} ({b:.2f})")
+            axs[i+1, idx].set_aspect("equal", adjustable="datalim")
+
+    plt.tight_layout()
+    fig.suptitle('M = {}, ρ = {}'.format(selected_M, selected_rho), fontsize=16)
+    if savefig is not None:
+        plt.savefig(f"{savefig}", bbox_inches="tight")
+    plt.show()
+    return None
+
 def plot_mcsims(manifold_type, df_sigma, df_N, G_sampler_ls, savefig=None):
     df_long, df_summary = df_sigma, df_N
 
@@ -12,70 +128,7 @@ def plot_mcsims(manifold_type, df_sigma, df_N, G_sampler_ls, savefig=None):
     )
 
     for idx, G in enumerate(G_sampler_ls):
-        if manifold_type == "S1":
-            manifold = Hypersphere(1)
-            ss = axs[0, idx].get_subplotspec()
-            axs[0, idx].remove()
-            axs[0, idx] = fig.add_subplot(ss, polar=True)
-            axs[0, idx].set_title(f"'{G.name}'", fontsize=14)
-
-            Theta = G.sample(1000)
-            Theta = manifold.intrinsic_to_extrinsic_coords(
-                manifold.extrinsic_to_intrinsic_coords(Theta) - np.pi / 12
-            )
-
-            f_scale = 0.3
-            bottom = 0.105
-            top = .5
-            disk_r = 0.1
-            grid_I = np.linspace(0, 2*np.pi, 50)
-            on_X = manifold.intrinsic_to_extrinsic_coords( grid_I[:, None])
-            hat_f = kernel_density_estimate("S1", Theta, 9, on_X)[1]
-            hat_pos_f = np.maximum(hat_f, 0)
-            normalised_hat_f = (hat_pos_f - hat_pos_f.min()) / (hat_pos_f.max() - hat_pos_f.min() + 1e-10)
-            verts = [[
-                    (grid_I[i], bottom),
-                    (grid_I[i], bottom + f_scale * hat_pos_f[i]), (grid_I[i+1], bottom + f_scale * hat_pos_f[i+1]),
-                    # (grid_I[i],top), (grid_I[i+1], bottom + top),
-                    (grid_I[i+1], bottom)
-                ] for i in range(len(grid_I) - 1)] # Create polygon vertices for each segment
-            poly = PolyCollection(verts, facecolors=plt.colormaps['Reds'](normalised_hat_f[:-1]), 
-                                alpha=0.85, edgecolors='none')
-            axs[0,idx].add_collection(poly)
-
-            axs[0,idx].set_ylim(0, bottom + hat_f.max()*f_scale)  
-            axs[0,idx].set_yticks([])
-            axs[0,idx].bar(0, disk_r, width=2*np.pi, bottom=0, color="white", edgecolor="none", align="edge", zorder=3)
-            axs[0,idx].plot(grid_I, disk_r*np.ones_like(grid_I), color='black', linewidth=1.2, zorder=4)
-            # S1_histogram(Theta, 30, axs[0, idx], "Reds")
-
-        elif manifold_type == "S2":
-            manifold = Hypersphere(2)
-            ss = axs[0, idx].get_subplotspec()
-            axs[0, idx].remove()
-            axs[0, idx] = fig.add_subplot(ss, projection="mollweide")
-            axs[0, idx].set_xticks([]); axs[0, idx].set_yticks([])
-            axs[0, idx].grid(True, alpha=0.3)
-            axs[0, idx].set_title(f"'{G.name}'", fontsize=14)
-
-            grid_resolution = 100
-            grid, grid_theta, grid_phi = S2grid(grid_resolution)
-            hat_f = kernel_density_estimate("S2", G.sample(1000), 20, grid)[1].reshape(
-                grid_resolution, grid_resolution
-            )
-            axs[0, idx].pcolormesh(
-                grid_phi - np.pi,
-                np.pi / 2 - grid_theta,
-                hat_f,
-                alpha=0.8,
-                shading="auto",
-                cmap="Reds",
-                vmin=0.5 if G.name == "uniform" else None,
-                vmax=0.5 if G.name == "uniform" else None,
-            )
-        else:
-            raise ValueError("Unsupported manifold type. Supported types are 'S1' and 'S2'.")
-
+        plot_G(manifold_type, G, fig, axs[0, idx])
 
         df_subset = df_long[df_long["G"] == G.name]
         sns.lineplot(
@@ -147,7 +200,6 @@ def plot_mcsims(manifold_type, df_sigma, df_N, G_sampler_ls, savefig=None):
         axs[2, -1].legend(handles2,labels2, loc="center left",bbox_to_anchor=(1.02, 0.5),ncol=1,frameon=False,fontsize=14,borderaxespad=0.0,)
 
     plt.tight_layout()
-    
     if savefig is not None:
         plt.savefig(f"{savefig}", bbox_inches="tight")
     plt.show()

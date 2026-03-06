@@ -6,7 +6,7 @@ from geomstats.geometry.product_manifold import ProductManifold
 from geomstats.geometry.special_orthogonal import SpecialOrthogonal
 from numpy.polynomial.legendre import Legendre
 from scipy.special import sph_harm
-from .tools import get_manifold
+from .helpers import get_manifold
 S1 = Hypersphere(dim=1)
 S2 = Hypersphere(dim=2)
 SO3 = SpecialOrthogonal(n=3)
@@ -14,7 +14,7 @@ T2 = ProductManifold([Hypersphere(1), Hypersphere(1)])
 
 
 
-def density_estimate(manifold_type, X, M, on_X, grad=True, laplacian=False):
+def density_estimate(manifold_type, X, M, on_X, grad=True, laplacian=False, normalise = False):
     """
     Spectral density estimate on compact manifolds.
     Optionally returns gradient and Laplacian.
@@ -36,7 +36,7 @@ def density_estimate(manifold_type, X, M, on_X, grad=True, laplacian=False):
         moments = np.sum(np.exp(-1j * k * theta[None, :]), axis=1, keepdims=True)
         exp_k_phi = np.exp(1j * k * phi[None, :])
 
-        norm_factor = 1 / (np.sqrt(2 * np.pi) * n_samples)
+        norm_factor = 1 / (2 * np.pi * n_samples)
 
         hat_f = (moments * exp_k_phi).sum(axis=0).real * norm_factor
 
@@ -76,7 +76,10 @@ def density_estimate(manifold_type, X, M, on_X, grad=True, laplacian=False):
             hat_f += poly(dot)
 
             if grad:
-                hat_grad_f += np.outer(poly_deriv(dot), X[i, :])
+                g_amb = np.outer(poly_deriv(dot), X[i, :])
+                radial_comp = np.sum(g_amb * on_X, axis=1, keepdims=True)
+                hat_grad_f += (g_amb - radial_comp * on_X)
+                # hat_grad_f += np.outer(poly_deriv(dot), X[i, :])
 
             if laplacian:
                 hat_lap_f += lap_poly(dot)
@@ -138,7 +141,7 @@ def density_estimate(manifold_type, X, M, on_X, grad=True, laplacian=False):
 
         kernel = np.einsum('kng,lng->g', exp1, exp2)
 
-        hat_f = kernel.real / (2 * np.pi * n_samples)
+        hat_f = kernel.real / ((2 * np.pi)**2 * n_samples)
 
         if grad:
             dkernel_phi = np.einsum('kng,lng->g',
@@ -149,8 +152,8 @@ def density_estimate(manifold_type, X, M, on_X, grad=True, laplacian=False):
                                     exp1,
                                     1j * k[:, None, None] * exp2)
 
-            d_f_d_phi = dkernel_phi.real / (2 * np.pi * n_samples)
-            d_f_d_psi = dkernel_psi.real / (2 * np.pi * n_samples)
+            d_f_d_phi = dkernel_phi.real / ((2 * np.pi)**2 * n_samples)
+            d_f_d_psi = dkernel_psi.real / ((2 * np.pi)**2 * n_samples)
 
             tangent_phi = np.stack([-on_X[:, 0, 1], on_X[:, 0, 0]], axis=1)
             tangent_psi = np.stack([-on_X[:, 1, 1], on_X[:, 1, 0]], axis=1)
@@ -171,11 +174,12 @@ def density_estimate(manifold_type, X, M, on_X, grad=True, laplacian=False):
                 (-k[:, None, None]**2) * exp2
             )
 
-            hat_lap_f = lap_kernel.real / (2 * np.pi * n_samples)
+            hat_lap_f = lap_kernel.real / ((2 * np.pi)**2 * n_samples)
 
 
     else:
         raise ValueError(f"Unknown manifold type: {manifold_type}")
+
 
     if grad is False:
         return on_X, hat_f

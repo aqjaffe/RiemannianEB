@@ -2,6 +2,10 @@ from geomstats.geometry.hypersphere import Hypersphere
 from geomstats.geometry.special_orthogonal import SpecialOrthogonal
 from geomstats.geometry.product_manifold import ProductManifold
 
+
+def sq_loss(manifold, X, delta):
+    return ( manifold.metric.dist_broadcast(X, delta) ** 2).mean()
+
 def get_manifold(manifold_type):
     if manifold_type == 'S1':  
         manifold = Hypersphere(1)

@@ -3,7 +3,7 @@ from tqdm import tqdm
 from geomstats.geometry.hypersphere import Hypersphere
 from geomstats.geometry.special_orthogonal import SpecialOrthogonal
 from geomstats.learning.frechet_mean import FrechetMean
-from .tools import get_manifold
+from .helpers import get_manifold
 from .priors import *
 
 def weighted_circular_mean(thetas, weights):

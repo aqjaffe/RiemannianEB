@@ -3,7 +3,7 @@ from .density_estimation import density_estimate
 from geomstats.geometry.hypersphere import Hypersphere
 from geomstats.geometry.special_orthogonal import SpecialOrthogonal
 import time
-from .tools import get_manifold
+from .helpers import get_manifold
 
 def denoiser(manifold_type, X, M, rho, sigma2, X_to_denoise, densityIn=None):
     """
