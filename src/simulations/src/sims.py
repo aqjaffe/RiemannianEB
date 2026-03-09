@@ -1,17 +1,3 @@
-from utils import *
-
-def get_G_class(manifold_type, sampler, name, params):
-    class G:
-        def __init__(self):
-            self.name = name
-            self.params = params
-
-        def sample(self, n_samples):
-            if params is not None:
-                return sampler(manifold_type, n_samples, **self.params)
-            else:
-                return sampler(manifold_type, n_samples)
-    return G()
 
 from utils import *
 

@@ -11,11 +11,6 @@ from matplotlib.collections import PolyCollection
 from sklearn.model_selection import KFold
 import pickle
 import os
-plt.rcParams.update({'font.size': 13,
-                     'mathtext.fontset': 'stix',
-                     'font.family': 'serif',
-                     'font.serif':'Palatino'})
-
 from .denoiser import *
 from .density_estimation import *
 from .oracle import *

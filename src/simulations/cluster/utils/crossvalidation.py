@@ -2,7 +2,6 @@ import numpy as np
 from tqdm import tqdm
 from sklearn.model_selection import KFold
 from .density_estimation import *
-    
 
 def spectral_dimension(manifold_type, M):
     if manifold_type == 'S1': return 2*M + 1

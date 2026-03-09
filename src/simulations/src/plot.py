@@ -65,55 +65,123 @@ def plot_G(manifold_type, G, fig, ax):
         raise ValueError("Unsupported manifold type. Supported types are 'S1' and 'S2'.")
 
 
-
-def plot_mcratesims(manifold_type, results, G_sampler_ls,selected_M, selected_rho, selected_NMC, savefig=None):
+def plot_mcratesims(manifold_type, results_mc, M, rho, params):
+    def _axis_all_positive_finite(ax) -> bool:
+        """Return True iff *all* y-data on the axis is finite and strictly positive."""
+        ys = []
+        for line in ax.get_lines():
+            y = line.get_ydata(orig=False)
+            if y is None:
+                continue
+            y = np.asarray(y, dtype=float)
+            if y.size:
+                ys.append(y)
+        if not ys:
+            return False
+        y_all = np.concatenate(ys)
+        return np.all(np.isfinite(y_all)) and np.all(y_all > 0)
+    
+    selected_sigma2 = params['sigma2']
+    NMC = params.get('NMC', 1)
+    G_sampler_ls = get_G_sampler_ls_from_params(params)
 
     K = len(G_sampler_ls)
-
-    # Make row 0 shorter than rows 1 and 2
-    fig, axs = plt.subplots(3, K, figsize=(20, 10),
-                            gridspec_kw={"height_ratios": [0.65, 1.0, 1.0], "hspace": 0.35, "wspace": 0.25},)
+    fig, axs = plt.subplots(3, K, figsize=(20, 10), gridspec_kw={"hspace": 0.35, "wspace": 0.25})
 
     for idx, G in enumerate(G_sampler_ls):
+        
         plot_G(manifold_type, G, fig, axs[0, idx])
 
-        df_rec = results[
-            (results.G == G.name) &
-            (results.M == selected_M) &
-            (results.rho == selected_rho) &
-            (results.NMC == selected_NMC)
-            ].sort_values("num_samples").copy()
-        
-        df_rec['mean_excess_loss'] = df_rec['mean_emp_loss'] -  (df_rec['mean_oracle_loss'] - df_rec['std_oracle_loss'])
-        
-        # display( df_rate[['num_samples', 'M', 'rho', 'mean_excess_loss', 'mean_displacement']])
-        for i, variable in enumerate([ 'excess_loss', 'displacement']):
+        df_G = results_mc[(results_mc.G == G.name)
+                & (results_mc.sigma2 == selected_sigma2)
+                    ].sort_values("num_samples")
+    
+        df_rec = results_mc[(results_mc.G == G.name)
+                        & (results_mc.sigma2 == selected_sigma2)
+                        & (df_G.rho == rho)
+                        & (df_G.M == M)
+                        ].sort_values("num_samples")
+
+        for i, variable in enumerate(['excess_loss', 'displacement']):
+            i+=1
+            ax = axs[i, idx]
+            col = 'mean_' + variable
+
+            # # Baseline
+            # if i == 0 and df_cv_G is not None and 'mean_naive_loss' in df_cv_G:
+            #     ax.axhline(df_cv_G['mean_naive_loss'].values.mean(), color='C0', linestyle='--', lw=2, alpha=0.7)
+
             x = df_rec["num_samples"].to_numpy(dtype=float)
-            y = df_rec["mean_" + variable].to_numpy(dtype=float)
-            ci  = 1.96 * df_rec["std_" + variable].to_numpy(dtype=float) / np.sqrt(selected_NMC)
+            y = df_rec[col].to_numpy(dtype=float)
+            ci = 1.96 * df_rec['std_' + variable].to_numpy(dtype=float) / np.sqrt(max(NMC, 1))
+            pos = y[np.isfinite(y) & (y > 0)]
+            eps = max(1e-10, (pos.min() / 10) if pos.size else 1e-10)
+            y_plot = np.clip(y, eps, None)
+            y_lo   = np.clip(y - ci, eps, None)
+            y_hi   = np.clip(y + ci, eps, None)
 
-            # avoid log(0) / negative values
-            eps = y[y > 0].min()/10 
-            y_plot = np.clip(y, eps, None); y_lo = np.clip(y - ci, eps, None); y_hi = np.clip(y + ci, eps, None)
-            axs[i+1, idx].plot(x, y_plot,label="mean_displacement")
-            axs[i+1, idx].fill_between(x, y_lo, y_hi, alpha=0.2, label="95% CI")
+            ax.plot(x, y_plot, label=f"M={M}, ρ={rho}", color='C2', lw=2)
+            ax.fill_between(x, y_lo, y_hi, alpha=0.1, color='C2')
 
-            axs[i+1, idx].set_xscale("log"); axs[i+1, idx].set_yscale("log")
-            if i == 0:
-                axs[i+1, idx].set_xlabel("n_samples")
-            axs[i+1, idx].grid(True, which="both", ls="--", alpha=0.4)
+            try:
+                valid = np.isfinite(x) & np.isfinite(y_plot) & (x > 0) & (y_plot > 0)
+                b = np.polyfit(np.log(x[valid]), np.log(y_plot[valid]), 1)[0] if valid.sum() > 1 else 0.0
+            except Exception:
+                b = np.nan
 
-            # fit in log-log space: log(y) = a + b*log(x)
-            b, _ = np.polyfit(np.log(x)[np.log(y) == np.log(y)], np.log(y)[np.log(y) == np.log(y)], 1)
-            axs[i+1, idx].set_title(f"{variable} ({b:.2f})")
-            axs[i+1, idx].set_aspect("equal", adjustable="datalim")
+            best_idx = df_G.groupby('num_samples')[col].idxmin()
+            df_oc = df_G.loc[best_idx].sort_values('num_samples')
+            x = df_oc["num_samples"].to_numpy(dtype=float)
+            y = df_oc[col].to_numpy(dtype=float)
+            y_plot = np.clip(y, eps, None)
+            try:
+                valid = np.isfinite(x) & np.isfinite(y_plot) & (x > 0) & (y_plot > 0)
+                b_o = np.polyfit(np.log(x[valid]), np.log(y_plot[valid]), 1)[0] if valid.sum() > 1 else 0.0
+            except Exception:
+                b_o = np.nan
 
-    plt.tight_layout()
-    fig.suptitle('M = {}, ρ = {}'.format(selected_M, selected_rho), fontsize=16)
-    if savefig is not None:
-        plt.savefig(f"{savefig}", bbox_inches="tight")
+            ax.plot(x, y_plot, linestyle='--', color='black', alpha=0.6, label="Oracle (Best M,ρ)")
+            for _, row in df_oc.iterrows():
+                ax.annotate(f"M={int(row.M)}\nρ={row.rho:.3f}",
+                            xy=(row.num_samples, max(float(row[col]), eps)),
+                            fontsize=7, color='black', ha='center', va='top')
+            ax.set_title(f"{variable}\nMC rate slope: {b:.2f}, Oracle slope: {b_o:.2f}", fontsize=12)
+
+
+    # Set scales/legend once (after all plotting)
+    handles, labels = [], []
+    for ax in axs.ravel():
+        ax.set_xscale("log")
+        if _axis_all_positive_finite(ax):
+            ax.set_yscale("log")
+        else:
+            ax.set_yscale("symlog", linthresh=1e-10)  
+
+        ax.grid(True, which="both", ls="--", alpha=0.3)
+
+        h, l = ax.get_legend_handles_labels()
+        for hh, ll in zip(h, l):
+            if ll and ll not in labels:
+                handles.append(hh)
+                labels.append(ll)
+        if ax.get_legend() is not None:
+            ax.legend_.remove()
+
+    # y-label on first column (if it ended up log)
+    for i in range(axs.shape[0]):
+        if axs[i, 0].get_yscale() == "log":
+            axs[i, 0].set_ylabel("Log Error")
+
+    if handles:
+        fig.legend(handles, labels, loc="lower center", bbox_to_anchor=(0.5, 0),
+                    ncol=len(labels), fontsize=12, frameon=False)
+        fig.subplots_adjust(bottom=0.18)
+
     plt.show()
+
+
     return None
+
 
 def plot_mcsims(manifold_type, df_sigma, df_N, G_sampler_ls, savefig=None):
     df_long, df_summary = df_sigma, df_N

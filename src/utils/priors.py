@@ -6,19 +6,6 @@ circle = Hypersphere(dim=1)
 sphere = Hypersphere(dim=2)
 
 
-def get_G_class(manifold_type, sampler, name, params):
-    class G:
-        def __init__(self):
-            self.name = name
-            self.params = params
-
-        def sample(self, n_samples):
-            if params is not None:
-                return sampler(manifold_type, n_samples, **self.params)
-            else:
-                return sampler(manifold_type, n_samples)
-    return G()
-
 
 def uniform_sampler(manifold_type, num_samples):
     if manifold_type == 'S1':

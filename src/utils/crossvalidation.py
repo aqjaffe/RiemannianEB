@@ -24,8 +24,9 @@ from tqdm import tqdm
 from sklearn.model_selection import KFold
 import matplotlib.gridspec as gridspec
     
-def plot_cv_distributions_split(results_ocv,params ID, selected_sigma2):
-
+def plot_cv_distributions_split(results_ocv, params):
+    if results_ocv.mean_cv_loss.unique()[0] != results_ocv.mean_cv_loss.unique()[0]: return None
+    ID, selected_sigma2 = float(params['ID']), params['sigma2']
     # Filter for the specific NMC
     df = results_ocv[(results_ocv.ID == ID) & (results_ocv.sigma2 == selected_sigma2)] .copy()
     

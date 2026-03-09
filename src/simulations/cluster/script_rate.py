@@ -1,26 +1,42 @@
 from utils import *
 
-manifold_type = 'S1'; manifold = get_manifold(manifold_type)
-G_sampler_ls = [
-    get_G_class(manifold_type, sampler, name, params) for sampler, name, params 
-        in [
-            (multimodal_sampler, '1-modal', {'tau2' : 0.1, 'num_modes' : 1}),
-            (multimodal_sampler, '2-modal', {'tau2' : 0.075, 'num_modes' : 2}),
-            (multimodal_sampler, '3-modal', {'tau2' : 0.05, 'num_modes' : 3}),
-            (multimodal_sampler, '4-modal', {'tau2' : 0.025, 'num_modes' : 4}),
-        ]
-    ]
-
+manifold_type = 'S2'; 
+M_grid= np.arange(1, 9)
 n_samples_ls =  [100, 500, 1000, 2500, 5000, 7500, 10000]
 sigma2 = 0.1
 NMC = 50
 test_size = 1000
 num_oracle_samples = 10000
-M_grid= np.arange(1, 9)
-rho_grid = [0.015, 0.025, 0.045, 0.065, 0.085, 0.10, 0.125, 0.15, 0.175, 0.2]
 
 # ------- # ------- # ------- # ------- # ------- # ------- # ------- # ------- # ------- # ------- # ------- # ------- # ------- # ------- 
 timenow = time.time()
+manifold = get_manifold(manifold_type)
+
+if manifold_type == 'S1':
+    G_sampler_ls = [
+        get_G_class(manifold_type, sampler, name, params) for sampler, name, params 
+            in [
+                (multimodal_sampler, '1-modal', {'tau2' : 0.1, 'num_modes' : 1}),
+                (multimodal_sampler, '2-modal', {'tau2' : 0.075, 'num_modes' : 2}),
+                (multimodal_sampler, '3-modal', {'tau2' : 0.05, 'num_modes' : 3}),
+                (multimodal_sampler, '4-modal', {'tau2' : 0.025, 'num_modes' : 4}),
+            ]
+        ]
+    rho_grid = [0.015, 0.025, 0.045, 0.065, 0.085, 0.10, 0.125, 0.15, 0.175, 0.2]
+
+if manifold_type == 'S2':
+    G_sampler_ls = [
+        get_G_class(manifold_type, sampler, name, params) for sampler, name, params 
+            in [
+                (uniform_sampler, 'uniform', None),
+                (multimodal_sampler, '1-modal', {'tau2' : 0.05, 'num_modes' : 1}),
+                (multimodal_sampler, '4-modal', {'tau2' : 0.01, 'num_modes' : 4}),
+                (equator_sampler, 'equator', {'tau2' : 0.001})         
+            ]
+        ]
+    rho_grid = [0.002, 0.004, 0.006, 0.008, 0.01, 0.02, 0.04, 0.06, 0.08, 0.1] 
+
+# ------- # ------- # ------- # ------- # ------- # ------- # ------- # ------- # ------- # ------- # ------- # ------- # ------- # ------- 
 
 def converenge_rate_experiment(manifold_type, G, n_samples_ls, M_grid, rho_grid, sigma2, test_size, num_oracle_samples, NMC, timenow, cv = False):
     manifold = get_manifold(manifold_type)

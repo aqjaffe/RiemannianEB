@@ -1,8 +1,4 @@
 import numpy as np
-from tqdm import tqdm
-from geomstats.geometry.hypersphere import Hypersphere
-from geomstats.geometry.special_orthogonal import SpecialOrthogonal
-from geomstats.learning.frechet_mean import FrechetMean
 from .helpers import get_manifold
 from .priors import *
 

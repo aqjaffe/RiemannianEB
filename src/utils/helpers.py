@@ -2,6 +2,37 @@ from geomstats.geometry.hypersphere import Hypersphere
 from geomstats.geometry.special_orthogonal import SpecialOrthogonal
 from geomstats.geometry.product_manifold import ProductManifold
 import numpy as np
+from .priors import *
+
+def get_G_class(manifold_type, sampler, name, params):
+    class G:
+        def __init__(self):
+            self.name = name
+            self.params = params
+
+        def sample(self, n_samples):
+            if params is not None:
+                return sampler(manifold_type, n_samples, **self.params)
+            else:
+                return sampler(manifold_type, n_samples)
+    return G()
+
+
+def get_G_sampler_ls_from_params(params):
+    G_sampler_ls = []
+    manifold_type = params['manifold_type'] 
+    for Gname, Gparams in zip(params['G_names'], params['G_params']):
+        if 'modal' in Gname:
+            G_sampler_ls.append(get_G_class(manifold_type, multimodal_sampler, Gname, Gparams))
+        elif 'uniform' in Gname:
+            G_sampler_ls.append(get_G_class(manifold_type, uniform_sampler, Gname, Gparams))
+        elif 'equator' in Gname:
+            G_sampler_ls.append(get_G_class(manifold_type, equator_sampler, Gname, Gparams))
+        else:
+            raise ValueError('Unknown Gname: ' + Gname)
+    if len(G_sampler_ls) != len(params['G_names']):
+        raise ValueError('G_sampler_ls length does not match G_names length')
+    return G_sampler_ls
 
 def parse_np_array(s):
     return np.fromstring(s.strip('[]'), sep=' ')
