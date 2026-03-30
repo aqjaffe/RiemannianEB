@@ -174,6 +174,10 @@ def plot_sims(manifold_type, results_mc, results_ocv, params, selected_sigma2 = 
                 axs[1, idx].legend( loc="center left", bbox_to_anchor=(1.02, 0.5), frameon=False, borderaxespad=0.0,fontsize = 16)
             else:
                 axs[1, idx].legend([],[], frameon=False)
+                axs[1, idx].set_ylabel('')
+            axs[1, idx].set_xlabel("$\sigma^2$")
+
+
 
 
         # sample_sizes = sorted(results_ocv[results_ocv["G"] == G.name]["num_samples"].unique())
@@ -236,7 +240,6 @@ def plot_sims(manifold_type, results_mc, results_ocv, params, selected_sigma2 = 
             else: b_cv = np.nan
 
             if variable == "excess_loss":
-                ax.set_ylabel("Excess Loss")
                 if manifold_type == 'S1':
                     ax.set_ylim(.75e-3, 1.25e-1)
                 else:
@@ -244,7 +247,7 @@ def plot_sims(manifold_type, results_mc, results_ocv, params, selected_sigma2 = 
 
             else:
                 ax.set_ylabel(variable)
-            ax.set_xlabel("Number of Samples")
+            ax.set_xlabel("n")
             if _axis_all_positive_finite(ax):
                 ax.set_xscale("log")
                 ax.set_yscale("log")
@@ -260,6 +263,10 @@ def plot_sims(manifold_type, results_mc, results_ocv, params, selected_sigma2 = 
         else:
             axs[2, idx].legend([],[], frameon=False)
 
+    for ax in axs.ravel():
+        ax.set_ylabel('')
+    axs[2, 0].set_ylabel("Excess MSE")
+    axs[1, 0].set_ylabel("MSE")
     if savefig is not None:
         plt.savefig(savefig, bbox_inches='tight')
     return None
