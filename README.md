@@ -15,13 +15,13 @@ Lastly, we implement our methodology in denoising problems from two scientific a
 
 ---
 ### Example: Denoising observations on manyfolds
-![S1](fig/all_examples/S1_3-modal.png)
-![S2](fig/all_examples/S2_equator.png)
+![S1](src/fig/all_examples/S1_3-modal.png)
+![S2](src/fig/all_examples/S2_equator.png)
 
 
 ### Example: Estimating Torsion Angles of Adjacent Amino Acids in a Protein
-![Ramachandran plot](fig/chemi.png)
+![Ramachandran plot](src/fig/chemi.png)
 
 ### Example: Denoising Gamma Ray Bursts (Astronomy Application)
-![Denoising Gamma Ray Bursts](fig/astro.png)
+![Denoising Gamma Ray Bursts](src/fig/astro.png)
 ---
