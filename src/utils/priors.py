@@ -1,11 +1,22 @@
 import numpy as np
 from geomstats.geometry.hypersphere import Hypersphere
-from geomstats.geometry.product_manifold import ProductManifold
 from geomstats.geometry.special_orthogonal import SpecialOrthogonal
 circle = Hypersphere(dim=1)
 sphere = Hypersphere(dim=2)
 
 
+def get_G_class(manifold_type, sampler, name, params):
+    class G:
+        def __init__(self):
+            self.name = name
+            self.params = params
+
+        def sample(self, n_samples):
+            if params is not None:
+                return sampler(manifold_type, n_samples, **self.params)
+            else:
+                return sampler(manifold_type, n_samples)
+    return G()
 
 def uniform_sampler(manifold_type, num_samples):
     if manifold_type == 'S1':
@@ -17,6 +28,33 @@ def uniform_sampler(manifold_type, num_samples):
     else: 
         raise ValueError( "Unsupported manifold type. Supported types are 'S1', 'S2', and 'SO3'." )
     return manifold.random_uniform(num_samples)
+
+
+def dirac_sampler(manifold_type, num_samples, n_points=1):
+    def uniform_points_(manifold_type: str, N: int):
+        if manifold_type == "S1":
+            theta = np.linspace(0, 2 * np.pi, N, endpoint=False)
+            return np.stack((np.cos(theta), np.sin(theta)), axis=1)
+        elif manifold_type == "S2":
+            # Fibonacci sphere
+            points = []
+            phi = (1 + 5**0.5) / 2
+            for i in range(N):
+                z = 1 - 2 * (i + 0.5) / N
+                r = np.sqrt(1 - z * z)
+                theta = 2 * np.pi * i / phi
+                points.append((r * np.cos(theta), r * np.sin(theta), z))
+            return np.array(points)
+        else:
+            raise ValueError("manifold must be 'S1' or 'S2'")
+
+    if manifold_type not in ("S1", "S2"):
+        raise ValueError("Unsupported manifold type. Supported types are 'S1', 'S2'.")
+
+    points = uniform_points_(manifold_type, int(n_points))  # (n_points, D)
+    # Sample indices from support points (with replacement).
+    idx = np.random.randint(0, points.shape[0], size=int(num_samples))
+    return points[idx]
 
 
 def equator_sampler(manifold_type, num_samples, tau2=0.01):
