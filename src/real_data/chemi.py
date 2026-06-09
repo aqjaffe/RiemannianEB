@@ -208,7 +208,7 @@ def make_summary_figure(data, label):
 
 if __name__ == '__main__':
     data = get_plot_data()
-    make_cv_figure(data)
+    # make_cv_figure(data)
     for label in ['M2']:#('M2', 'M3', 'cv'):
         make_grid_figure(data, label)
         make_summary_figure(data, label)

@@ -108,5 +108,5 @@ def make_main_figure(data):
 if __name__ == '__main__':
     print('Average angular variance (in rad^2): ', sigma2)
     data = get_plot_data()
-    make_cv_figure(data)
+    # make_cv_figure(data)
     make_main_figure(data)
