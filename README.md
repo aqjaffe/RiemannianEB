@@ -8,9 +8,9 @@ Empirical Bayes approach to denoising measurements of latent variables on manifo
 
 ## Overview
 
-A fully data-driven denoiser for measurements of latent variables on compact Riemannian manifolds. Given noisy observations $X_i = \exp_{\Theta_i}(\sigma \varepsilon_i)$ of unknown latent points $\Theta_i$ on a manifold $\mathcal{M}$, the method recovers a denoised estimate $\hat\delta(X_i) \approx \Theta_i$ without assuming any parametric form for the prior distribution.
+A fully data-driven denoiser for measurements of latent variables on a compact Riemannian manifold $\mathcal{M}$. Given noisy measurements $X_1,\ldots, X_n\in \mathcal{M}$ of latent variables $\Theta_1,\ldots,\Theta_n\in\mathcal{M}$ sampled from a Riemannian Gaussian likelihood, the method constructs a denoising function $\hat\delta_{T}:\mathcal{M}\to \mathcal{M}$ which achieves nearly the Bayes risk, i.e. the risk of the posterior Fréchet mean $\delta_{B}:\mathcal{M}\to \mathcal{M}$. It is assumed that $\Theta_1,\ldots,\Theta_n$ are i.i.d. samples from some distribution $G$ on $\mathcal{M}$, but we make no assumptions about the parametric form of $G$.
 
-The denoiser is a Tweedie-type field $\hat\delta_{\mathcal{T}}$ built from a nonparametric estimate $\hat f_n$ of the marginal density of the observations: the latent point is recovered by moving each observation along the estimated score $\nabla \log \hat f_n$. The density is estimated by a truncated eigenfunction (spectral) expansion of order $M$, and its score is regularised at percentile level $\rho$. Both hyperparameters are selected from the data alone — no knowledge of the prior or the truth is required.
+The denoiser $\hat\delta_{\mathcal{T}}$ is constructed as follows. First, it constructs a nonparametric density estimate $\hat{f}_n$ of the distribution of $X_1,\ldots,X_n$, via a truncated series of eigenfunctions of the Laplace-Beltrami operator. Then, it computes the score field $\nabla\log \hat{f}_n$ of $\hat{f}_n$, which involves regularizing small values at percentile level $\rho$. Lastly, each measurement is flowed along the vector field $\nabla\log \hat{f}_n$ in order to shrink towards high-density regions and stretch away from low-density regions. This construction is based on a novel version of the Tweedie-Eddington formula for Riemannian Gaussian mixture models, as explained in the paper. All hyperparameters are selected from the data alone, i.e., no knowledge of the latent variables or their distribution is required.
 
 **Supported manifolds:** $S^1$ (circle), $S^2$ (sphere), $SO(3)$ (rotations), $T^2$ (torus).
 
@@ -130,8 +130,8 @@ src/
 
 ---
 
-### Example: Estimating Torsion Angles of Adjacent Amino Acids in a Protein
+### Example: Denoising Torsion Angles of Adjacent Amino Acids in a Protein
 ![Ramachandran plot](src/fig/chemi_summary_M2.png)
 
-### Example: Denoising Gamma Ray Bursts (Astronomy Application)
+### Example: Denoising Locations of Gamma Ray Bursts
 ![Denoising Gamma Ray Bursts](src/fig/astro.png)
