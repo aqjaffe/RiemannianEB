@@ -97,18 +97,15 @@ def S2scatter(X, ax, color, alpha=.5, s=5, lw=.5, title = None, marker = None):
     return None
 
 
-def S2plot_quiver(grid, vals, figax= None, scale=1, skip=1, cmap='Greens', cvals = None):
+def S2plot_quiver(grid, vals, figax= None, scale=1, skip=1, cmap='Greens', cvals = None,
+                  equirectangular=False, hide_outlier_quantile=None):
     if figax is None:
-        fig, ax = plt.subplots(figsize=(6, 4), subplot_kw={'projection': 'mollweide'})
+        proj = None if equirectangular else 'mollweide'
+        fig, ax = plt.subplots(figsize=(6, 4), subplot_kw={'projection': proj})
     else: fig, ax = figax
     grid_resolution = int(grid.shape[0]**0.5)
     grid_theta, grid_phi = grid_theta_phi_from_X_grid(grid)
-
-        
-
-    grid_theta, grid_phi = grid_theta_phi_from_X_grid(grid)
     
-
     e_theta = np.stack([
         np.cos(grid_theta) * np.cos(grid_phi),
         np.cos(grid_theta) * np.sin(grid_phi),
@@ -128,165 +125,40 @@ def S2plot_quiver(grid, vals, figax= None, scale=1, skip=1, cmap='Greens', cvals
     else:
         C = np.sqrt(U**2 + V**2)
 
+    lon = (grid_phi - np.pi)[::skip, ::skip]
+    lat = (np.pi/2 - grid_theta)[::skip, ::skip]
+    C = C[::skip, ::skip]
+    if equirectangular:
+        # Plain (lon, lat) axes: meridians are straight, so we can draw the
+        # geometrically faithful field with angles='xy'. A physical east
+        # displacement U maps to a longitude increment U/sin(theta) (east arc
+        # length = sin(theta)*dlon); north maps 1:1 to latitude. This gives true
+        # tangent directions everywhere with no projection-induced curvature.
+        Uq = (U / np.maximum(np.sin(grid_theta), 1e-6))[::skip, ::skip]
+        Vq = V[::skip, ::skip]
+        quiver_kw = dict(angles='xy', scale_units='xy')
+    else:
+        # Mollweide axes: meridians are curved, so angles='xy' would bend the
+        # arrows along them. angles='uv' instead reads each arrow's direction
+        # straight from its (east, north) components in screen space, keeping a
+        # meridional score pointing up/down regardless of map position (at the
+        # cost of not aligning with the curved graticule away from centre).
+        Uq = U[::skip, ::skip]
+        Vq = V[::skip, ::skip]
+        quiver_kw = dict(angles='uv')
 
-    im = ax.quiver(
-        (grid_phi - np.pi)[::skip, ::skip], (np.pi/2 - grid_theta)[::skip, ::skip],
-        U[::skip, ::skip],           V[::skip, ::skip],
-        C[::skip, ::skip],
-        scale=scale, cmap=cmap, alpha=0.85,       
-        angles='xy',
-        scale_units='xy',
-    )
+    # Optionally hide upper-outlier arrows (e.g. the 1/sin(theta) blow-up near
+    # the poles, or rare huge scores in low-density regions): blank the plotted
+    # components above the chosen quantile of arrow length — quiver skips NaNs.
+    if hide_outlier_quantile is not None:
+        norm = np.sqrt(Uq**2 + Vq**2)
+        thresh = np.nanquantile(norm, hide_outlier_quantile)
+        outliers = norm > thresh
+        Uq = np.where(outliers, np.nan, Uq)
+        Vq = np.where(outliers, np.nan, Vq)
+
+    im = ax.quiver(lon, lat, Uq, Vq, C, scale=scale, cmap=cmap, alpha=0.85, **quiver_kw)
+    if equirectangular:
+        ax.set_xlim(-np.pi, np.pi); ax.set_ylim(-np.pi/2, np.pi/2)
+        ax.set_aspect('equal')
     ax.grid(True, linestyle='--', alpha=0.4)
-    # fig.colorbar(im, ax=ax, orientation='horizontal', fraction=0.05, pad=0.14)
-
-
-
-
-# def S2plot_quiver(
-#     fig, grid_vals, vals,
-#     ax = None, 
-#     scale=5,
-#     skip=1, 
-#     title = None,
-#     cmap = 'Blues',
-#     arrow_width = None, 
-#     headwidth = 3, 
-#     headlength = 5, 
-#     headaxislength = 4,
-#     minlength = 0,
-#     stick_length = None
-# ):
-#     if ax is None:
-#         fig, ax = plt.subplots(figsize=(6, 4), subplot_kw={'projection': 'mollweide'})
-        
-#     grid, grid_theta, grid_phi = grid_vals
-#     grid_resolution = int(grid.shape[0]**.5)
-
-#     grid_phi_mw = (grid_phi - np.pi)       # longitude in [-pi, pi]
-#     grid_theta_mw = (np.pi/2 - grid_theta) # latitude in [-pi/2, pi/2]
-#     e_theta = np.stack([
-#         np.cos(grid_theta) * np.cos(grid_phi),
-#         np.cos(grid_theta) * np.sin(grid_phi),
-#         -np.sin(grid_theta)
-#     ], axis=-1)
-#     e_phi = np.stack([
-#         -np.sin(grid_phi),
-#         np.cos(grid_phi),
-#         np.zeros_like(grid_phi)
-#     ], axis=-1)
-
-#     ax.grid(True, color='gray', lw=0.5)
-
-#     quiver_kwargs = dict(
-#         scale=scale,
-#         cmap=cmap,
-#         alpha=0.7,
-#         headwidth=headwidth,
-#         headlength=headlength,
-#         headaxislength=headaxislength,
-#         minlength=minlength,
-#     )
-
-#     if arrow_width is not None:
-#         quiver_kwargs["width"] = arrow_width  # shaft width (axes units)
-
-#     vals_reshaped = vals.reshape(grid_resolution, grid_resolution, 3)
-#     vals_theta = -np.sum(vals_reshaped * e_theta, axis=-1)
-#     vals_phi = np.sum(vals_reshaped * e_phi, axis=-1)
-#     U = vals_phi
-#     V = vals_theta
-#     C = np.sqrt(U**2 + V**2)
-
-#     if stick_length is not None:
-#         eps = 1e-12
-#         mag = np.maximum(C, eps)
-#         U = U / mag * stick_length
-#         V = V / mag * stick_length
-
-#     im = ax.quiver(
-#         grid_phi_mw[::skip, ::skip], grid_theta_mw[::skip, ::skip],
-#         U[::skip, ::skip], V[::skip, ::skip],
-#         C[::skip, ::skip],
-#         **quiver_kwargs
-#     )
-#     ax.set_title(title)
-#     fig.colorbar(im, ax=ax, orientation='horizontal', fraction=0.05, pad=0.04)
-#     return None
-
-
-
-
-# def S2plot_quiver(fig, density_args, rho, mode, ax, skip = 1, grid_resolution = 50, scale = 5):
-#     if mode not in ['gradient', 'score']:
-#         raise ValueError("mode must be 'gradient' or 'score'")
-        
-#     grid, grid_theta, grid_phi = S2grid(grid_resolution)
-
-#     if 'X' in density_args.keys():
-#         X = density_args['X']
-#         M = density_args['M']
-#         _, f, grad_f = density_estimate('S2', X, M, grid) 
-#     else:
-#         f = density_args['f']
-#         grad_f = density_args['grad_f']
-
-
-#     hat_grad_f_reshaped = grad_f.reshape(grid_resolution, grid_resolution, 3)
-#     hat_score = rho * grad_f / np.maximum(f[:, np.newaxis], rho)
-#     grid_phi_mw = (grid_phi - np.pi)          # longitude in [-pi, pi]
-#     grid_theta_mw = (np.pi/2 - grid_theta)    # latitude in [-pi/2, pi/2]
-
-#     e_theta = np.stack([ 
-#         np.cos(grid_theta) * np.cos(grid_phi), np.cos(grid_theta) * np.sin(grid_phi), -np.sin(grid_theta)
-#                     ], axis=-1)
-#     e_phi = np.stack([
-#         -np.sin(grid_phi), np.cos(grid_phi), np.zeros_like(grid_phi)
-#                         ], axis=-1)
-#     ax.grid(True, color='gray', lw=0.5)
-#     if mode == 'gradient':
-#         grad_theta = -np.sum(hat_grad_f_reshaped * e_theta, axis=-1) # Project gradient onto tangent directions
-#         grad_phi = np.sum(hat_grad_f_reshaped * e_phi, axis=-1)
-#         im = ax.quiver(grid_phi_mw[::skip, ::skip], grid_theta_mw[::skip, ::skip],
-#                     grad_phi[::skip, ::skip], grad_theta[::skip, ::skip],
-#                     np.sqrt(grad_theta**2 + grad_phi**2)[::skip, ::skip],
-#                     scale= scale, cmap='C0', alpha=0.7)
-#         ax.set_title(r'$\nabla \hat f$')
-
-#     if mode == 'score':
-#         hat_score_reshaped = hat_score.reshape(grid_resolution, grid_resolution, 3)
-#         grad_theta_score = -np.sum(hat_score_reshaped * e_theta, axis=-1) # Project score onto tangent directions
-#         grad_phi_score = np.sum(hat_score_reshaped * e_phi, axis=-1)
-#         im = ax.quiver(grid_phi_mw[::skip, ::skip], grid_theta_mw[::skip, ::skip],
-#                     grad_phi_score[::skip, ::skip], grad_theta_score[::skip, ::skip],
-#                     np.sqrt(grad_theta_score**2 + grad_phi_score**2)[::skip, ::skip],
-#                     scale= scale, cmap='C2', alpha=0.7)
-#         ax.set_title(r'$\nabla \log \hat f$')
-        
-#     fig.colorbar(im,ax= ax,  orientation='horizontal', fraction=0.05, pad=0.04)
-#     return None
-
-# def S2plot_density_gradient_score(X,M,sigma2,rho, grid_resolution =50, skip=1, mollwide=True):
-#     X_grid, grid_theta, grid_phi = S2grid(grid_resolution)
-#     X_grid, hat_f, hat_grad_f = density_estimate('S2', X, M, X_grid)
-#     hat_score = sigma2*  hat_grad_f / np.maximum(hat_f[:, np.newaxis], rho)
-#     # -------------------------------------------------- PLOTTING -------------------------------------------------- #
-#     if mollwide:
-#         fig, axs = plt.subplots( 1, 3,figsize=(15, 6), subplot_kw={'projection': 'mollweide'})
-#     else:
-#         fig, axs = plt.subplots(1, 3, figsize=(15, 6))
-#     # Plot estimated density --------------------------------------------------
-#     axs[0].grid(True, color='gray', lw=0.5)
-#     axs[0].set_title(r'$\hat f$')
-#     im_f = axs[0].pcolormesh((grid_phi - np.pi) , (np.pi/2 - grid_theta), 
-#                             hat_f.reshape(grid_resolution, grid_resolution),
-#                             alpha=0.8,shading='auto',cmap='Blues')
-#     fig.colorbar(im_f, ax=axs[0], orientation='horizontal', fraction=0.05, pad=0.04)
-#     # Plot gradient --------------------------------------------------
-#     S2plot_quiver(fig, {'f': hat_f, 'grad_f': hat_grad_f}, rho, 'gradient', axs[1], skip = 1, grid_resolution = 50, scale = 5)
-#     # Plot score -----------------------------------------------------
-#     S2plot_quiver(fig, {'f': hat_f, 'grad_f': hat_grad_f}, rho, 'score', axs[2], skip = 1, grid_resolution = 50, scale = 5)
-#     plt.tight_layout()
-#     return fig
-
-

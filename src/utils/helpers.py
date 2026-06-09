@@ -38,6 +38,8 @@ def get_G_sampler_ls_from_params(params):
             G_sampler_ls.append(get_G_class(manifold_type, equator_sampler, Gname, Gparams))
         elif 'dirac' in Gname:
             G_sampler_ls.append(get_G_class(manifold_type, dirac_sampler, Gname, Gparams))
+        elif 'cap' in Gname:   
+            G_sampler_ls.append(get_G_class(manifold_type, cap_sampler, Gname, Gparams))
         else:
             raise ValueError('Unknown Gname: ' + Gname)
     if len(G_sampler_ls) != len(params['G_names']):

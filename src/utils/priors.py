@@ -4,6 +4,13 @@ from geomstats.geometry.special_orthogonal import SpecialOrthogonal
 circle = Hypersphere(dim=1)
 sphere = Hypersphere(dim=2)
 
+def uniform_sampler(num_samples, manifold_type):
+    if manifold_type == 'S1':
+        return circle.random_uniform(num_samples)
+    elif manifold_type == 'S2':
+        return sphere.random_uniform(num_samples)
+    else:
+        raise NotImplementedError(f"Uniform sampling for {manifold_type} is not implemented yet.")
 
 def get_G_class(manifold_type, sampler, name, params):
     class G:
@@ -11,6 +18,7 @@ def get_G_class(manifold_type, sampler, name, params):
             self.name = name
             self.params = params
 
+<<<<<<< HEAD
         def sample(self, n_samples):
             if params is not None:
                 return sampler(manifold_type, n_samples, **self.params)
@@ -28,6 +36,8 @@ def uniform_sampler(manifold_type, num_samples):
     else: 
         raise ValueError( "Unsupported manifold type. Supported types are 'S1', 'S2', and 'SO3'." )
     return manifold.random_uniform(num_samples)
+
+
 
 
 def dirac_sampler(manifold_type, num_samples, n_points=1):
@@ -86,6 +96,9 @@ def equator_sampler(manifold_type, num_samples, tau2=0.01):
 
 
 def multimodal_sampler(manifold_type, n_samples, tau2, num_modes):
+=======
+def multimodal_sampler(n_samples,manifold_type, G_params):
+>>>>>>> f7c80cf7d36e48d2656bd3e47eace04afa3fcb5c
     '''
     Sample from a multimodal prior on the manifold
     Parameters
@@ -102,6 +115,10 @@ def multimodal_sampler(manifold_type, n_samples, tau2, num_modes):
         Samples drawn from the multimodal prior on S^1.
     '''
     if manifold_type == 'S1':
+<<<<<<< HEAD
+=======
+        tau2, num_modes = G_params['tau2'], G_params['num_modes']
+>>>>>>> f7c80cf7d36e48d2656bd3e47eace04afa3fcb5c
         angles = np.mod( np.linspace(0, 2*np.pi, num_modes, endpoint=False) + np.pi/12, 2*np.pi)
         means = np.stack([np.cos(angles), np.sin(angles)], axis=1)
         classes = np.random.randint(0, num_modes, n_samples)
@@ -113,6 +130,10 @@ def multimodal_sampler(manifold_type, n_samples, tau2, num_modes):
         return samples
     
     elif manifold_type == 'S2':
+<<<<<<< HEAD
+=======
+        num_modes, tau2  = G_params['num_modes'], G_params['tau2']
+>>>>>>> f7c80cf7d36e48d2656bd3e47eace04afa3fcb5c
         if num_modes == 1:
             mus = np.array([[0, 1, 0]])
         elif num_modes == 2:
@@ -137,4 +158,63 @@ def multimodal_sampler(manifold_type, n_samples, tau2, num_modes):
         return samples
     
     else:
+<<<<<<< HEAD
         raise NotImplementedError(f"Multimodal prior for {manifold_type} is not implemented yet.")
+
+
+def cap_sampler(manifold_type, num_samples, half_angle):
+    """
+    Sample uniformly inside a spherical cap (S2) or circular arc (S1).
+
+    Parameters
+    ----------
+    manifold_type : str
+        'S1' or 'S2'.
+    num_samples : int
+        Number of samples.
+    half_angle : float
+        Angular radius of the cap/arc in radians.
+
+    Returns
+    -------
+    X : ndarray, shape (num_samples, D)
+        Uniformly sampled points inside the cap/arc.
+    """
+    center = np.array([0.0, 0.0, 1.0]) if manifold_type == 'S2' else np.array([1.0, 0.0])
+    center = np.asarray(center, dtype=float)
+    center = center / np.linalg.norm(center)
+
+    if manifold_type == 'S1':
+        center_angle = np.arctan2(center[1], center[0])
+        theta = np.random.uniform(center_angle - half_angle, center_angle + half_angle, size=num_samples)
+        return np.stack([np.cos(theta), np.sin(theta)], axis=1)
+
+    elif manifold_type == 'S2':
+        # Uniform in cap: z ~ Uniform[cos(half_angle), 1], phi ~ Uniform[0, 2pi]
+        cos_alpha = np.cos(half_angle)
+        z = np.random.uniform(cos_alpha, 1.0, size=num_samples)
+        phi = np.random.uniform(0.0, 2.0 * np.pi, size=num_samples)
+        r = np.sqrt(1.0 - z ** 2)
+        X = np.stack([r * np.cos(phi), r * np.sin(phi), z], axis=1)  # cap around north pole
+
+        # Rotate north pole [0,0,1] -> center via Rodrigues' formula
+        north = np.array([0.0, 0.0, 1.0])
+        if np.allclose(center, north):
+            return X
+        if np.allclose(center, -north):
+            X[:, 2] *= -1
+            return X
+        v = np.cross(north, center)
+        s = np.linalg.norm(v)
+        c = np.dot(north, center)
+        vx = np.array([[0, -v[2], v[1]],
+                       [v[2], 0, -v[0]],
+                       [-v[1], v[0], 0]])
+        R = np.eye(3) + vx + vx @ vx * (1.0 - c) / (s ** 2)
+        return X @ R.T
+
+    else:
+        raise ValueError("cap_sampler only supports manifold_type='S1' or 'S2'.")
+=======
+        raise NotImplementedError(f"Multimodal prior for {manifold_type} is not implemented yet.")
+>>>>>>> f7c80cf7d36e48d2656bd3e47eace04afa3fcb5c
