@@ -51,7 +51,7 @@ def T2grid(grid_resolution=50):
     return X_grid, phi, psi
 
 
-def T2_scatter(X, ax = None, color = 'C0', s=10, alpha = 0.25, labelsize=None):
+def T2_scatter(X, ax = None, color = 'C0', s=10, alpha = 0.25, labelsize=None, ylabel = True):
 
     X_phi = np.arctan2(X[:, 1, 0], X[:, 0, 0])
     X_psi = np.arctan2(X[:, 1, 1], X[:, 0, 1])
@@ -66,6 +66,8 @@ def T2_scatter(X, ax = None, color = 'C0', s=10, alpha = 0.25, labelsize=None):
     ax.set_title('$X_i$')
 
     _apply_T2_ticks(ax, labelsize=labelsize)
+    if not ylabel:
+        ax.set_yticklabels([])
 
     return None
 
@@ -95,7 +97,7 @@ def T2plot_quiver(grid, vals, figax=None, scale=1, skip=1, cmap='Greens', cvals=
     else:
         C = np.sqrt(d_phi**2 + d_psi**2)  # now already 2D
 
-    im = ax.quiver(
+    ax.quiver(
         grid_phi[::skip, ::skip],
         grid_psi[::skip, ::skip],
         d_phi[::skip, ::skip],
@@ -128,11 +130,9 @@ def T2_imshow(grid, vals, figax=None):
 
     hat_f_grid = np.asarray(vals).reshape(grid_phi.shape)
 
-    im = ax.pcolormesh(grid_phi, grid_psi, hat_f_grid, shading="auto", cmap="Blues", alpha=0.5)
+    ax.pcolormesh(grid_phi, grid_psi, hat_f_grid, shading="auto", cmap="Blues", alpha=0.5)
 
     ax.grid(True, color='gray', lw=0.5)
-    # cbar_ax = fig.add_axes([0.95, 0.15, 0.02, 0.7])
-    # fig.colorbar(im, orientation='vertical', cax=cbar_ax)
     ax.set_title('$\\log \\;\\hat{f}$')
 
     ax.axis('square')
@@ -142,7 +142,6 @@ def T2_imshow(grid, vals, figax=None):
     ax.set_aspect('equal')
 
     ax.grid(True, linestyle='--', alpha=0.4)
-    # fig.colorbar(im, ax=ax, orientation='horizontal', fraction=0.05, pad=0.14)
 
 
     return None
