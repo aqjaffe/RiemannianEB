@@ -165,4 +165,3 @@ for G in tqdm(G_sampler_ls, desc=f"{manifold_type} | sampling G", unit="G",
               total=len(G_sampler_ls), dynamic_ncols=True, leave=False):
     data = get_plot_data(G)
     make_figure(G, data)
-

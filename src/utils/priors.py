@@ -4,13 +4,6 @@ from geomstats.geometry.special_orthogonal import SpecialOrthogonal
 circle = Hypersphere(dim=1)
 sphere = Hypersphere(dim=2)
 
-def uniform_sampler(num_samples, manifold_type):
-    if manifold_type == 'S1':
-        return circle.random_uniform(num_samples)
-    elif manifold_type == 'S2':
-        return sphere.random_uniform(num_samples)
-    else:
-        raise NotImplementedError(f"Uniform sampling for {manifold_type} is not implemented yet.")
 
 def get_G_class(manifold_type, sampler, name, params):
     class G:
@@ -18,7 +11,6 @@ def get_G_class(manifold_type, sampler, name, params):
             self.name = name
             self.params = params
 
-<<<<<<< HEAD
         def sample(self, n_samples):
             if params is not None:
                 return sampler(manifold_type, n_samples, **self.params)
@@ -96,9 +88,6 @@ def equator_sampler(manifold_type, num_samples, tau2=0.01):
 
 
 def multimodal_sampler(manifold_type, n_samples, tau2, num_modes):
-=======
-def multimodal_sampler(n_samples,manifold_type, G_params):
->>>>>>> f7c80cf7d36e48d2656bd3e47eace04afa3fcb5c
     '''
     Sample from a multimodal prior on the manifold
     Parameters
@@ -115,10 +104,6 @@ def multimodal_sampler(n_samples,manifold_type, G_params):
         Samples drawn from the multimodal prior on S^1.
     '''
     if manifold_type == 'S1':
-<<<<<<< HEAD
-=======
-        tau2, num_modes = G_params['tau2'], G_params['num_modes']
->>>>>>> f7c80cf7d36e48d2656bd3e47eace04afa3fcb5c
         angles = np.mod( np.linspace(0, 2*np.pi, num_modes, endpoint=False) + np.pi/12, 2*np.pi)
         means = np.stack([np.cos(angles), np.sin(angles)], axis=1)
         classes = np.random.randint(0, num_modes, n_samples)
@@ -130,10 +115,6 @@ def multimodal_sampler(n_samples,manifold_type, G_params):
         return samples
     
     elif manifold_type == 'S2':
-<<<<<<< HEAD
-=======
-        num_modes, tau2  = G_params['num_modes'], G_params['tau2']
->>>>>>> f7c80cf7d36e48d2656bd3e47eace04afa3fcb5c
         if num_modes == 1:
             mus = np.array([[0, 1, 0]])
         elif num_modes == 2:
@@ -158,7 +139,6 @@ def multimodal_sampler(n_samples,manifold_type, G_params):
         return samples
     
     else:
-<<<<<<< HEAD
         raise NotImplementedError(f"Multimodal prior for {manifold_type} is not implemented yet.")
 
 
@@ -215,6 +195,3 @@ def cap_sampler(manifold_type, num_samples, half_angle):
 
     else:
         raise ValueError("cap_sampler only supports manifold_type='S1' or 'S2'.")
-=======
-        raise NotImplementedError(f"Multimodal prior for {manifold_type} is not implemented yet.")
->>>>>>> f7c80cf7d36e48d2656bd3e47eace04afa3fcb5c
