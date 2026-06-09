@@ -314,7 +314,7 @@ def plot_mcratesims_o(
                             slope_str = f"{slope:.2f}" if np.isfinite(slope) else "—"
 
                             ax.plot(ns_fit, y_fit, color='C2', lw=1.2, ls='--', alpha=0.8)
-                            ax.annotate(f"{lbl}\nslope {slope_str}", xy=(0.95, 0.95), xycoords='axes fraction',
+                            ax.annotate(f"{lbl}\nslope {slope_str}", xy=(0.75, 0.95), xycoords='axes fraction',
                                         fontsize=8, ha='left', va='top')
 
                     # title: slope on rate rows (skip the first)

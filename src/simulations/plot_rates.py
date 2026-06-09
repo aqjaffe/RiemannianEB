@@ -30,7 +30,7 @@ fig, axs = plot_mcratesims_o(
     selected_sigma2=0.15,
     selected_rho = 0.5,
     eps = 5e-5,
-    ylim = (5e-5, 7.5e-1),
+    ylim = (1e-3, 7.5e-1),
     savefig="../fig/S1_rates.pdf",
 )
 plt.show()
@@ -67,7 +67,7 @@ fig, axs = plot_mcratesims_o(
     selected_rho =0.5,
     eps =5e-4,
     savefig="../fig/S2_rates.pdf",
-    ylim = (5e-4, 7.5e-1),
+    ylim = (7.5e-5, 2.5e-1),
 
 )
 plt.show()
